@@ -10,7 +10,7 @@
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
 header{position:sticky;top:0;z-index:5;background:#fff;border-bottom:3px solid var(--red);padding:8px 14px;display:flex;align-items:center;gap:10px}
-header img{height:40px;width:40px;object-fit:cover;border-radius:50%}
+header img{height:40px;width:auto;display:block}
 header h1{font-size:16px;margin:0;line-height:1.15;flex:1}
 header h1 small{display:block;color:var(--muted);font-weight:500;font-size:12px}
 .ib{background:none;border:1px solid var(--line);border-radius:10px;padding:7px 10px;font:inherit;font-size:13px;color:var(--ink);cursor:pointer;text-decoration:none}
@@ -109,7 +109,7 @@ dialog input{display:block;width:100%;margin-top:3px;font:inherit;font-size:16px
 </head>
 <body>
 <header>
-  <a href="../"><img src="../logo_mtv_schwarmstedt.jpg" alt="MTV"></a>
+  <a href="../" title="Zum Cockpit"><img src="mtv_logo.png" alt="MTV Schwarmstedt"></a>
   <h1>Übungsleiter-Abrechnung<small id="who">MTV Schwarmstedt</small></h1>
   <span id="sync" title="Speicherstatus"></span>
   <button class="ib" id="b-set">⚙︎</button>
@@ -142,6 +142,17 @@ dialog input{display:block;width:100%;margin-top:3px;font:inherit;font-size:16px
   <div class="row" style="justify-content:flex-end"><button class="btn" value="cancel">Abbrechen</button><button class="btn" value="skip">Ohne IBAN</button><button class="btn pri" value="ok">Drucken / PDF</button></div>
 </form></dialog>
 
+<dialog id="dlg-pdf"><form method="dialog">
+  <h3>PDF ist fertig</h3>
+  <p class="muted" id="pdf-info"></p>
+  <div class="row" style="flex-direction:column;align-items:stretch;gap:8px">
+    <a class="btn pri" id="pdf-open" target="_blank" rel="noopener" style="text-align:center;text-decoration:none">PDF öffnen (Drucken / Teilen)</a>
+    <a class="btn" id="pdf-dl" style="text-align:center;text-decoration:none">Herunterladen</a>
+    <button class="btn" value="close">Schließen</button>
+  </div>
+</form></dialog>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="../shared/kalender.js"></script>
 <script src="../shared/cloud.js"></script>
 <script>
@@ -270,15 +281,58 @@ function askIban(){
     d.returnValue='cancel';d.showModal();setTimeout(()=>inp.focus(),50);
   });
 }
+/* Original-Formular (vorlage.pdf) mit pdf-lib befüllen – Koordinaten in pt, Ursprung unten links */
+const ROW_TOP=562.7,ROW_H=(562.7-188.5)/20;
+const COL={datum:[62,124.7],von:[124.7,178.6],bis:[178.6,232.4],std:[232.4,277.8],anlass:283};
+let TPL=null;
+async function pdfExport(iban){
+  const {PDFDocument,StandardFonts,rgb}=PDFLib;
+  if(!TPL)TPL=await (await fetch('vorlage.pdf')).arrayBuffer();
+  const src=await PDFDocument.load(TPL),doc=await PDFDocument.create();
+  const f=await doc.embedFont(StandardFonts.Helvetica),fb=await doc.embedFont(StandardFonts.HelveticaBold);
+  const ink=rgb(.07,.07,.07);
+  const T=(pg,s,x,y,o={})=>{s=String(s==null?'':s);if(!s)return;const ft=o.bold?fb:f,sz=o.size||10,w=ft.widthOfTextAtSize(s,sz);
+    const xx=o.center?x-w/2:o.right?x-w:x;pg.drawText(s,{x:xx,y,size:sz,font:ft,color:o.color||ink});};
+  const mid=a=>(a[0]+a[1])/2;
+  const o=curQ,q=Q(o),t=sorted(q),c=D.cfg,pages=Math.max(1,Math.ceil(t.length/20)),today=Kal.today();
+  const total=t.reduce((s,x)=>s+hrs(x.von,x.bis),0);
+  for(let p=0;p<pages;p++){
+    const [pg]=await doc.copyPages(src,[0]);doc.addPage(pg);
+    const last=p===pages-1,rows=t.slice(p*20,p*20+20);
+    T(pg,Kal.de(qStart(o)),210,694);T(pg,Kal.de(qEnd(o)),400,694);
+    T(pg,c.name,140,668.5);T(pg,c.angebot,128,643);T(pg,c.staette,375,643);T(pg,iban,89,617.5);
+    rows.forEach((x,i)=>{const y=ROW_TOP-(i+1)*ROW_H+6;
+      T(pg,Kal.de(x.d),mid(COL.datum),y,{center:true});T(pg,x.von,mid(COL.von),y,{center:true});T(pg,x.bis,mid(COL.bis),y,{center:true});
+      T(pg,num(hrs(x.von,x.bis)),mid(COL.std),y,{center:true});T(pg,x.anlass,COL.anlass,y);});
+    const sub=t.slice(0,p*20+20).reduce((s,x)=>s+hrs(x.von,x.bis),0);
+    T(pg,num(last?total:sub),mid(COL.std),174,{center:true,bold:true});
+    if(!last)T(pg,'Übertrag auf Seite '+(p+2),COL.anlass,174,{size:9,color:rgb(.4,.4,.4)});
+    if(last){
+      T(pg,num(total),189.9,138.5,{center:true});T(pg,num(c.satz),289.1,138.5,{center:true});
+      T(pg,num(total*c.satz),526,135.5,{right:true,bold:true,size:11});
+      T(pg,Kal.de(today),481.9,73.2,{center:true});
+    }
+    if(pages>1)T(pg,`Seite ${p+1} von ${pages}`,544.3,8,{right:true,size:7,color:rgb(.5,.5,.5)});
+  }
+  doc.setTitle(`MTV Abrechnung ${o.q}. Quartal ${o.y}`);doc.setAuthor(c.name||'MTV Schwarmstedt');
+  const url=URL.createObjectURL(new Blob([await doc.save()],{type:'application/pdf'}));
+  const name=`MTV_Abrechnung_${o.y}_Q${o.q}.pdf`,d=$('#dlg-pdf');
+  $('#pdf-open').href=url;$('#pdf-dl').href=url;$('#pdf-dl').download=name;
+  $('#pdf-info').textContent=`${name} · ${t.length} Termine · ${num(total)} Std. · ${num(total*c.satz)} €`;
+  d.onclose=()=>{setTimeout(()=>URL.revokeObjectURL(url),60000);};
+  d.showModal();
+  q.exports.push(today);save();render();
+}
 async function printPdf(){
   const iban=await askIban();if(iban===null)return;
+  if(window.PDFLib){try{await pdfExport(iban);return;}catch(e){console.error(e);toast('PDF-Vorlage nicht geladen – nutze Druckansicht');}}
   const o=curQ,q=Q(o),t=sorted(q),c=D.cfg,pages=Math.max(1,Math.ceil(t.length/20));
   const total=t.reduce((s,x)=>s+hrs(x.von,x.bis),0),today=Kal.today();
   q.exports.push(today);save();
   let h='';
   for(let p=0;p<pages;p++){
     const rows=t.slice(p*20,p*20+20),last=p===pages-1;
-    h+=`<div class="pg"><div class="ph"><img src="../logo_mtv_schwarmstedt.jpg" alt=""><div class="t"><b>Abrechnung</b><span>Männerturnverein von 1909 e.V. Schwarmstedt</span></div></div>
+    h+=`<div class="pg"><div class="ph"><img src="mtv_logo.png" alt=""><div class="t"><b>Abrechnung</b><span>Männerturnverein von 1909 e.V. Schwarmstedt</span></div></div>
       <div class="pf"><b>Abrechnungszeitraum</b><b style="margin-left:6mm">vom:</b><span class="v">${Kal.de(qStart(o))}</span><b>bis zum:</b><span class="v">${Kal.de(qEnd(o))}</span></div>
       <div class="pf"><b>Name, Vorname:</b><span class="v">${esc(c.name)}</span></div>
       <div class="pf"><b>Sportangebot:</b><span class="v">${esc(c.angebot)}</span><b>Sportstätte:</b><span class="v">${esc(c.staette)}</span></div>
