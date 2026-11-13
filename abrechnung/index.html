@@ -135,6 +135,13 @@ dialog input{display:block;width:100%;margin-top:3px;font:inherit;font-size:16px
   <div class="row" style="justify-content:flex-end"><button class="btn" value="cancel">Abbrechen</button><button class="btn pri" value="ok">Speichern</button></div>
 </form></dialog>
 
+<dialog id="dlg-iban"><form method="dialog">
+  <h3>IBAN für den Ausdruck</h3>
+  <label>IBAN<input name="iban" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="DE00 0000 0000 0000 0000 00"></label>
+  <p class="muted">Die IBAN wird nur in dieses PDF gedruckt und nirgends gespeichert.</p>
+  <div class="row" style="justify-content:flex-end"><button class="btn" value="cancel">Abbrechen</button><button class="btn" value="skip">Ohne IBAN</button><button class="btn pri" value="ok">Drucken / PDF</button></div>
+</form></dialog>
+
 <script src="../shared/kalender.js"></script>
 <script src="../shared/cloud.js"></script>
 <script>
@@ -248,13 +255,23 @@ $('#app').addEventListener('click',e=>{
   else return;
   save();render();
 });
+window.addEventListener('afterprint',()=>{$('#print').innerHTML='';}); // IBAN nicht im Speicher lassen
 $('#app').addEventListener('change',e=>{
   const i=e.target.dataset.i,f=e.target.dataset.f;if(i==null||!f)return;
   const x=sorted(Q(curQ))[+i];x[f]=e.target.value;save();render();
 });
 
 /* ---------- PDF (Druckansicht im Formular-Layout) ---------- */
-function printPdf(){
+function askIban(){
+  return new Promise(res=>{
+    const d=$('#dlg-iban'),inp=d.querySelector('input');inp.value='';
+    d.onclose=()=>{const v=d.returnValue;const iban=inp.value.replace(/\s+/g,'').toUpperCase();inp.value='';
+      res(v==='ok'?iban.replace(/(.{4})/g,'$1 ').trim():v==='skip'?'':null);};
+    d.returnValue='cancel';d.showModal();setTimeout(()=>inp.focus(),50);
+  });
+}
+async function printPdf(){
+  const iban=await askIban();if(iban===null)return;
   const o=curQ,q=Q(o),t=sorted(q),c=D.cfg,pages=Math.max(1,Math.ceil(t.length/20));
   const total=t.reduce((s,x)=>s+hrs(x.von,x.bis),0),today=Kal.today();
   q.exports.push(today);save();
@@ -265,7 +282,7 @@ function printPdf(){
       <div class="pf"><b>Abrechnungszeitraum</b><b style="margin-left:6mm">vom:</b><span class="v">${Kal.de(qStart(o))}</span><b>bis zum:</b><span class="v">${Kal.de(qEnd(o))}</span></div>
       <div class="pf"><b>Name, Vorname:</b><span class="v">${esc(c.name)}</span></div>
       <div class="pf"><b>Sportangebot:</b><span class="v">${esc(c.angebot)}</span><b>Sportstätte:</b><span class="v">${esc(c.staette)}</span></div>
-      <div class="pf"><b>IBAN:</b><span class="v"></span></div>
+      <div class="pf"><b>IBAN:</b><span class="v" style="letter-spacing:.5px">${esc(iban)}</span></div>
       <table class="ptab"><tr><th rowspan="2" colspan="2" style="width:30mm">Datum</th><th colspan="2">Uhrzeit</th><th rowspan="2" style="width:16mm">Std.</th><th rowspan="2">Anlass</th></tr>
       <tr><th class="s" style="width:19mm">von</th><th class="s" style="width:19mm">bis</th></tr>`;
     for(let i=0;i<20;i++){const x=rows[i];
@@ -282,7 +299,7 @@ function printPdf(){
   $('#print').innerHTML=h;
   render();
   const img=$('#print img');
-  const go=()=>setTimeout(()=>window.print(),150);
+  let done=false;const go=()=>{if(done)return;done=true;setTimeout(()=>window.print(),150);};
   if(img&&!img.complete){img.onload=go;img.onerror=go;}else go();
 }
 

@@ -18,8 +18,18 @@ header h1{flex:1;margin:0;font-size:18px;line-height:1.15}
 header h1 small{display:block;font-size:12px;color:var(--muted);font-weight:500}
 .ib{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 12px;font:inherit;font-size:13px;cursor:pointer}
 .ib.pri{background:var(--red);border-color:var(--red);color:#fff;font-weight:700}
-main{max-width:1080px;margin:0 auto;padding:14px;display:grid;grid-template-columns:1fr;gap:12px}
-@media(min-width:860px){main{grid-template-columns:1fr 1fr}.wide{grid-column:1/-1}}
+main{max-width:1440px;margin:0 auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+.col{display:contents}
+#c-notes{order:1}#c-games{order:2}#c-todo{order:3}#c-tab{order:4}#c-tools{order:5}
+@media(min-width:760px){
+  main{display:grid;grid-template-columns:1fr 1fr;align-items:start}
+  .col{display:flex;flex-direction:column;gap:12px;min-width:0}
+  .cL{grid-column:1;grid-row:1}.cM{grid-column:1;grid-row:2}.cR{grid-column:2;grid-row:1/span 2}
+}
+@media(min-width:1180px){
+  main{grid-template-columns:1.05fr 1fr .95fr}
+  .cL{grid-column:1;grid-row:1}.cM{grid-column:2;grid-row:1}.cR{grid-column:3;grid-row:1}
+}
 .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;min-width:0}
 .card h2{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--red);display:flex;justify-content:space-between;align-items:center}
 .card h2 a{font-size:12px;text-transform:none;letter-spacing:0;color:var(--muted);text-decoration:none}
@@ -58,16 +68,16 @@ table.tab{width:100%;border-collapse:collapse;font-size:14px}
 .todo li.done span{text-decoration:line-through;color:var(--muted)}
 .todo .x{border:0;background:none;color:var(--muted);font-size:16px;cursor:pointer}
 /* Kacheln */
-.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
-.tile{position:relative;display:flex;flex-direction:column;gap:6px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;text-decoration:none;overflow:hidden;transition:transform .15s,box-shadow .15s}
-.tile::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--red)}
-.tile:active,.tile:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(200,16,46,.15)}
-.tile svg{width:34px;height:34px;color:var(--red)}
-.tile b{font-size:17px}
-.tile span{font-size:13px;color:var(--muted)}
-.tile .lock{position:absolute;top:12px;right:12px;font-size:12px;color:var(--muted)}
-.tile.soon{opacity:.55;pointer-events:none}
-.sec{grid-column:1/-1;margin:6px 2px -4px;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.tiles{display:grid;grid-template-columns:1fr;gap:8px}
+@media(max-width:759px){.tiles{grid-template-columns:1fr 1fr}}
+.tile{position:relative;display:grid;grid-template-columns:34px 1fr;gap:0 12px;align-items:center;background:#fff;border:1px solid var(--line);border-left:4px solid var(--red);border-radius:12px;padding:10px 12px;text-decoration:none;transition:transform .15s,box-shadow .15s}
+.tile:active,.tile:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(200,16,46,.14)}
+.tile svg{width:30px;height:30px;color:var(--red);grid-row:1/span 2}
+.tile b{font-size:16px}
+.tile span{font-size:12.5px;color:var(--muted);line-height:1.3}
+.tile .lock{position:absolute;top:8px;right:10px;font-size:11px}
+.tile.soon{opacity:.5;pointer-events:none}
+@media(max-width:759px){.tile{grid-template-columns:1fr;gap:4px}.tile svg{grid-row:auto}}
 </style>
 </head>
 <body>
@@ -77,18 +87,16 @@ table.tab{width:100%;border-collapse:collapse;font-size:14px}
   <span id="acc"></span>
 </header>
 <main>
-  <section class="card wide" id="c-notes"><h2>Heute &amp; demnächst</h2><div class="notes" id="notes"><div class="muted">Lade …</div></div></section>
-
+  <div class="col cL">
+  <section class="card" id="c-notes"><h2>Heute &amp; demnächst</h2><div class="notes" id="notes"><div class="muted">Lade …</div></div></section>
   <section class="card" id="c-games"><h2>Spiele <a href="https://semmikgs.github.io/public/mtv/">alle Spiele →</a></h2><div id="games" class="muted">Lade nuLiga-Daten …</div></section>
+  </div>
+  <div class="col cM">
   <section class="card" id="c-tab"><h2>Tabelle <span class="muted" id="stand"></span></h2><div id="tab"></div></section>
-
-  <section class="card wide" id="c-todo"><h2>Fürs Training</h2>
-    <form class="todo-add" id="todo-form"><input id="todo-in" placeholder="z. B. Edding mitbringen" autocomplete="off" enterkeyhint="done"><button aria-label="Hinzufügen">+</button></form>
-    <ul class="todo" id="todo"></ul>
-  </section>
-
-  <div class="sec">Werkzeuge</div>
-  <div class="tiles wide">
+  </div>
+  <div class="col cR">
+  <section class="card" id="c-tools"><h2>Werkzeuge</h2>
+  <div class="tiles">
     <a class="tile" href="https://semmikgs.github.io/handball-djugend/UI_Modul_Browser_STANDALONE.html">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/><circle cx="20" cy="18" r="2.5" fill="currentColor"/></svg>
       <b>Trainingsplanung</b><span>Modul-Browser, Einheiten generieren und speichern</span></a>
@@ -103,6 +111,12 @@ table.tab{width:100%;border-collapse:collapse;font-size:14px}
       <span class="lock">🔒</span>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
       <b>Abrechnung</b><span id="tile-abr">Übungsleiter-Stunden, PDF pro Quartal</span></a>
+  </div>
+  </section>
+  <section class="card" id="c-todo"><h2>Fürs Training</h2>
+    <form class="todo-add" id="todo-form"><input id="todo-in" placeholder="z. B. Edding mitbringen" autocomplete="off" enterkeyhint="done"><button aria-label="Hinzufügen">+</button></form>
+    <ul class="todo" id="todo"></ul>
+  </section>
   </div>
 </main>
 
