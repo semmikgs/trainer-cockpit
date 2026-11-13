@@ -1,6 +1,6 @@
 # MTV Schwarmstedt – Trainer-Cockpit
 
-Persönlicher Bereich für die mJD: Landing Page mit nuLiga-Infos, Erinnerungen, ToDo, Übungsleiter-Abrechnung und (folgt) Kadertool.
+Persönlicher Bereich für die mJD: Landing Page mit nuLiga-Infos, Erinnerungen, ToDo, Übungsleiter-Abrechnung und Kadertool.
 
 - **Seite:** https://semmikgs.github.io/trainer-cockpit/
 - **Daten:** Supabase-Projekt „Handball“ (Tabelle `user_docs`, Row-Level-Security: jeder sieht nur seine eigenen Daten)
@@ -11,7 +11,8 @@ Persönlicher Bereich für die mJD: Landing Page mit nuLiga-Infos, Erinnerungen,
 | Ordner | Inhalt |
 |---|---|
 | `/` | Cockpit |
-| `abrechnung/` | Übungsleiter-Abrechnung mit PDF im Vereinsformular |
+| `abrechnung/` | Übungsleiter-Abrechnung, PDF-Export füllt `abrechnung/vorlage.pdf` (Original-Formular) |
+| `kader/` | Kadertool: Kader, Aufstellung, Wechselplan, Bewertung, Spielnoten (Cloud-Dokument `kader`) |
 | `shared/cloud.js` | Login + Cloud-Speicher (mit Offline-Kopie) |
 | `shared/kalender.js` | Ferien & Feiertage Niedersachsen (bis Sommer 2028 – danach ergänzen) |
 | `.github/workflows/supabase-ping.yml` | hält das Free-Projekt aktiv |

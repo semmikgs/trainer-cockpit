@@ -1,0 +1,1013 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>MTV Kadertool</title>
+<style>
+:root{--bg:#0d0e11;--panel:#16181d;--panel2:#1f2228;--line:#2b2f37;--red:#d0152b;--red2:#ff3347;--silver:#c9ced6;--text:#eef0f3;--muted:#8b919b;--warn:#ffb020;--ok:#3ecf7a;--sel:#ffd166}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+header{position:sticky;top:0;z-index:5;background:linear-gradient(180deg,#16171c,#0d0e11);border-bottom:2px solid var(--red);padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 4px 18px rgba(208,21,43,.18)}
+.badge{width:50px;height:50px;flex:none;border-radius:50%;object-fit:cover;background:#fff;border:2px solid var(--silver);box-shadow:0 0 14px rgba(208,21,43,.6)}
+h1{font-size:17px;margin:0;line-height:1.15}
+h1 small{display:block;color:var(--muted);font-weight:500;font-size:12px}
+nav{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+.btn{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:9px 14px;font:inherit;font-weight:600;cursor:pointer}
+.btn:active{transform:scale(.97)}
+.btn.pri,.btn.on{background:var(--red);border-color:var(--red2);color:#fff}
+.btn.sm{padding:6px 10px;font-size:13px}
+.btn.del{color:#ff8a95}
+main{padding:16px;max-width:1240px;margin:0 auto}
+section{display:none}
+section.act{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+.card h2{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:1.2px;color:var(--silver)}
+input,select{background:#0f1115;color:var(--text);border:1px solid var(--line);border-radius:9px;padding:8px 10px;font:inherit;font-size:16px}
+input:focus,select:focus{outline:2px solid var(--red);outline-offset:0}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.muted{color:var(--muted);font-size:13px}
+.pchip{background:#0f1115;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:8px 10px;font:inherit;font-weight:700;font-size:14px;cursor:pointer}
+.pchip.on{background:var(--red);border-color:var(--red2);color:#fff}
+.item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:0}
+.item .grow{flex:1;min-width:0}
+.item .grow b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nrb{width:38px;height:38px;flex:none;border-radius:50%;background:var(--red);display:grid;place-items:center;font-weight:800;border:2px solid var(--silver)}
+.tag{display:inline-block;font-size:11px;padding:2px 6px;border-radius:6px;background:#2a2e36;color:var(--silver);font-weight:700;margin:2px 3px 0 0}
+.aufgrid{display:grid;grid-template-columns:1fr;gap:14px;user-select:none;-webkit-user-select:none}
+@media(min-width:820px){.aufgrid{grid-template-columns:minmax(0,1fr) 310px}}
+#court{width:100%;max-height:74vh;display:block;margin:0 auto}
+#court text{font-family:inherit;text-anchor:middle;pointer-events:none}
+.tok,.slot{cursor:grab;touch-action:none}
+.nr{fill:#fff;font-weight:800;font-size:17px}
+.nm{fill:#eef0f3;font-size:12px;font-weight:600;paint-order:stroke;stroke:#0d0e11;stroke-width:3px}
+.pk{fill:var(--silver);font-size:10px;font-weight:800;paint-order:stroke;stroke:#0d0e11;stroke-width:3px}
+.pl{fill:#8b919b;font-size:12px;font-weight:800}
+.wx{fill:#000;font-weight:900;font-size:12px}
+.seg{display:inline-flex;background:#0f1115;border:1px solid var(--line);border-radius:11px;padding:3px;gap:3px}
+.seg .btn{border:0;padding:7px 12px}
+#bench{min-height:64px;border:1px dashed var(--line);border-radius:10px;padding:8px}
+.chip{display:inline-flex;align-items:center;gap:7px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 11px 4px 4px;margin:0 6px 6px 0;touch-action:none;cursor:grab;font-weight:600}
+.chip b{width:28px;height:28px;border-radius:50%;background:var(--red);display:grid;place-items:center;font-size:13px;border:2px solid var(--silver)}
+.chip small{color:var(--muted);font-size:11px}
+.chip.sel{outline:3px solid var(--sel)}
+.att{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:14px}
+.att input{width:20px;height:20px;accent-color:var(--red)}
+#hint{min-height:20px;margin:8px 0 0;font-size:13px;color:var(--sel)}
+#ghost{position:fixed;pointer-events:none;z-index:50;display:none;align-items:center;justify-content:center;width:48px;height:48px;margin:-24px 0 0 -24px;border-radius:50%;background:var(--red);border:3px solid #fff;font-weight:800;font-size:17px;box-shadow:0 6px 20px rgba(0,0,0,.6)}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#24272e;border:1px solid var(--line);padding:10px 16px;border-radius:10px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:60}
+#toast.show{opacity:1}
+.tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%}
+th,td{padding:4px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}
+th{font-size:12px;color:var(--silver);font-weight:700}
+th.hz2{border-left:2px solid var(--red)}
+td.hz2{border-left:2px solid var(--red)}
+td.pos{font-weight:800;color:var(--silver);text-align:left}
+td select{width:100%;min-width:104px;padding:6px}
+select.dup{border-color:var(--red2);background:#3a0e14}
+.cp{background:none;border:0;color:var(--muted);font-size:15px;cursor:pointer;padding:0 4px}
+.zrow{display:flex;align-items:center;gap:10px;padding:5px 0;font-size:14px}
+.zrow .nm2{width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar{height:10px;border-radius:5px;background:#2a2e36;flex:1;overflow:hidden;position:relative}
+.bar i{display:block;height:100%}
+.bar u{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--silver)}
+.min{width:44px;text-align:right;font-weight:700}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px;background:var(--c)}
+.item.cur{background:rgba(208,21,43,.1);border-radius:10px;padding-left:8px}
+
+.sc{width:38px;height:36px;border-radius:9px;border:1px solid var(--line);background:#0f1115;color:var(--muted);font:inherit;font-weight:800;cursor:pointer}
+.sc.on{background:var(--red);border-color:var(--red2);color:#fff}
+.scrow{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}
+.scrow:last-child{border-bottom:0}
+.scrow .lb{flex:1;min-width:0;font-size:14px}
+.scrow .bt{display:flex;gap:4px}
+.cath{display:flex;justify-content:space-between;align-items:center}
+.avg{font-weight:800;color:var(--sel);font-size:15px}
+textarea{width:100%;min-height:70px;background:#0f1115;color:var(--text);border:1px solid var(--line);border-radius:9px;padding:8px 10px;font:inherit;font-size:16px;resize:vertical}
+.dchip{display:inline-block;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);margin:0 6px 6px 0;font-size:13px;cursor:pointer}
+.dchip.on{border-color:var(--sel);color:var(--sel)}
+.pchip2{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;border:2px solid var(--line);background:var(--panel2);margin:0 6px 6px 0;font-size:14px;font-weight:600;cursor:pointer}
+.pchip2 i{width:10px;height:10px;border-radius:50%;background:var(--line)}
+.seg.wrap{flex-wrap:wrap}
+#radar{width:100%;max-width:560px;display:block;margin:0 auto}
+#radar text{font-family:inherit}
+.vt td,.vt th{font-size:13px}
+.vt td:first-child,.vt th:first-child{text-align:left}
+.bewgrid{display:grid;grid-template-columns:1fr;gap:14px}
+@media(min-width:900px){.bewgrid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.tgl{display:flex;align-items:center;gap:6px;font-size:14px}
+.tgl input{width:20px;height:20px;accent-color:var(--red)}
+
+.vb{display:inline-block;min-width:30px;padding:1px 6px;border-radius:6px;background:#2a2410;color:var(--sel);font-size:12px;font-weight:800;font-style:normal;text-align:center}
+.sug{display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+.sug:last-child{border-bottom:0}
+.sug .grow{flex:1;min-width:0;font-size:14px}
+.sug:active{background:var(--panel2)}
+.ok{color:var(--ok);font-weight:800}
+.strow{display:flex;justify-content:space-between;padding:4px 0;font-size:14px}
+.strow b{color:var(--sel)}
+#a-mini{width:100%;display:block}
+tr.str td{font-weight:800;font-size:13px}
+
+.lhs{display:inline-block;background:var(--silver);color:#0d0e11;border-radius:4px;padding:0 4px;font-weight:900;font-size:10px;font-style:normal;vertical-align:1px}
+.stp{display:flex;align-items:center;gap:6px;background:#0f1115;border:1px solid var(--line);border-radius:10px;padding:4px 8px;font-size:13px}
+.stp b{min-width:24px;text-align:center;font-size:16px}
+.stp .sc{width:34px;height:34px}
+.gtbl td,.gtbl th{font-size:13px}
+.gtbl td:first-child,.gtbl th:first-child{text-align:left}
+.gtbl tr.tot td{font-weight:800;border-top:2px solid var(--line)}
+tr[data-gsel]{cursor:pointer}
+.gcourt{width:100%;max-width:460px;display:block;margin:0 auto}
+.gcourt text{text-anchor:middle;font-family:inherit}
+#gchart{width:100%;display:block}
+#gchart text{font-family:inherit}
+.dchip b{margin-right:2px}
+#sync{width:10px;height:10px;border-radius:50%;background:#555;flex:none}
+#sync.ok{background:var(--ok)}#sync.busy{background:var(--warn)}#sync.off{background:var(--red2)}
+</style>
+</head>
+<body>
+<header>
+  <a href="../" title="Zum Cockpit"><img class="badge" alt="MTV" src="../logo_mtv_schwarmstedt.jpg"></a>
+  <h1>Kadertool<small>MTV Schwarmstedt · D-Jugend</small></h1>
+  <nav>
+    <button class="btn" data-tab="kader">Kader</button>
+    <button class="btn" data-tab="auf">Aufstellung</button>
+    <button class="btn" data-tab="plan">Wechselplan</button>
+    <button class="btn" data-tab="bew">Bewertung</button>
+    <button class="btn" data-tab="spiele">Spiele</button>
+    <button class="btn" data-tab="saved">Gespeichert</button>
+  </nav>
+  <span id="sync" title="Speicherstatus"></span>
+  <button class="btn sm" id="b-out" title="Abmelden" aria-label="Abmelden" style="padding:6px 9px">⏻</button>
+</header>
+
+<main>
+<!-- KADER -->
+<section id="t-kader">
+  <div class="card">
+    <h2 id="k-title">Spieler hinzufügen</h2>
+    <div class="row">
+      <label class="f">Nr.<input id="k-nr" type="number" inputmode="numeric" min="0" max="99" style="width:80px"></label>
+      <label class="f" style="flex:1;min-width:180px">Name<input id="k-name" type="text" autocomplete="off"></label>
+    </div>
+    <div class="muted" style="margin:10px 0 6px">Positionen (Mehrfachauswahl)</div>
+    <div class="row" id="k-pos"></div>
+    <label class="tgl" style="margin-top:12px"><input type="checkbox" id="k-lh"> Linkshänder</label>
+    <div class="row" style="margin-top:12px">
+      <button class="btn pri" id="k-save">Hinzufügen</button>
+      <button class="btn" id="k-cancel" style="display:none">Abbrechen</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Kader <span id="k-count" class="muted"></span></h2>
+    <div id="k-list"></div>
+  </div>
+</section>
+
+<!-- AUFSTELLUNG -->
+<section id="t-auf">
+  <div class="card">
+    <div class="row">
+      <label class="f" style="flex:1;min-width:170px">Aufstellung<input id="a-name" type="text"></label>
+      <label class="f">Datum<input id="a-datum" type="date"></label>
+      <label class="f" style="flex:1;min-width:150px">Gegner<input id="a-gegner" type="text"></label>
+    </div>
+  </div>
+  <div class="aufgrid">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div class="seg"><button class="btn" data-mode="angriff">Angriff</button><button class="btn" data-mode="abwehr">Abwehr 1:5</button></div>
+        <div class="row">
+          <button class="btn sm" id="a-vals">Werte</button>
+          <button class="btn sm" id="a-tobench" style="display:none">↩ Auf Bank</button>
+          <button class="btn sm" id="a-clear">Ansicht leeren</button>
+        </div>
+      </div>
+      <svg id="court" viewBox="0 0 400 440" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div id="hint"></div>
+    </div>
+    <div>
+      <div class="card">
+        <h2>Bank</h2>
+        <div id="bench" data-drop="bench"></div>
+        <div class="muted" style="margin-top:6px">Ziehen oder antippen → Position antippen. <span style="color:var(--warn)">!</span> = ungewohnte Position</div>
+      </div>
+      <div id="a-side"></div>
+      <div class="card">
+        <h2>Heute dabei</h2>
+        <div id="attend"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WECHSELPLAN -->
+<section id="t-plan">
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <div class="row">
+        <label class="f">Halbzeit<select id="p-hz"><option>15</option><option>20</option><option>25</option></select></label>
+        <label class="f">Block<select id="p-blk"><option value="5">5 Min.</option><option value="10">10 Min.</option></select></label>
+      </div>
+      <div class="row">
+        <button class="btn sm" id="p-first">Block 1 = Angriffsaufstellung</button>
+        <button class="btn sm" id="p-all">Alle Blöcke = Angriffsaufstellung</button>
+        <button class="btn sm" id="p-vals">Werte</button>
+        <button class="btn sm del" id="p-clear">Plan leeren</button>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Plan <span class="muted" id="p-name"></span></h2>
+    <div class="tblwrap"><table id="p-table"></table></div>
+    <div class="muted" style="margin-top:8px">⇥ kopiert einen Block in den nächsten. Rot = Spieler doppelt im selben Block.</div>
+  </div>
+  <div class="card">
+    <h2>Einsatzzeiten</h2>
+    <div id="p-times"></div>
+    <div class="legend"><span style="--c:var(--ok)">≥ 80 % vom Soll</span><span style="--c:var(--warn)">50–79 %</span><span style="--c:var(--red2)">&lt; 50 %</span><span>│ = Soll (gleichmäßige Verteilung)</span></div>
+  </div>
+</section>
+
+<!-- BEWERTUNG -->
+<section id="t-bew">
+  <div class="card" style="padding:10px 14px">
+    <div class="seg"><button class="btn" data-bv="erf">Erfassen</button><button class="btn" data-bv="dia">Sterndiagramm</button></div>
+  </div>
+  <div id="bv-erf">
+    <div class="card">
+      <div class="row">
+        <label class="f" style="flex:1;min-width:170px">Spieler<select id="b-sp"></select></label>
+        <label class="f">Datum<input id="b-dat" type="date"></label>
+        <button class="btn sm" id="b-copy">Letzte übernehmen</button>
+        <button class="btn sm del" id="b-del">Bewertung löschen</button>
+      </div>
+      <div class="muted" style="margin-top:8px">1 = Anfang · 3 = altersgemäß · 5 = herausragend. Antippen setzt, erneutes Antippen entfernt. Wird automatisch gespeichert.</div>
+      <div id="b-hist" style="margin-top:8px"></div>
+    </div>
+    <div class="bewgrid" id="b-cats"></div>
+    <div class="card"><h2>Notiz</h2><textarea id="b-notiz" placeholder="Stärken, Entwicklungsziele …"></textarea></div>
+  </div>
+  <div id="bv-dia">
+    <div class="card">
+      <div class="seg wrap" id="c-mode"></div>
+      <div class="row" style="margin-top:10px;align-items:center">
+        <label class="f">Position<select id="c-pos"></select></label>
+        <label class="f">Stand<select id="c-stand"></select></label>
+        <label class="tgl"><input type="checkbox" id="c-avg"> Ø Mannschaft</label>
+        <label class="tgl"><input type="checkbox" id="c-verl"> Verlauf (erste ↔ aktuelle)</label>
+      </div>
+      <div style="margin-top:10px" id="c-players"></div>
+      <div class="muted" id="c-info"></div>
+    </div>
+    <div class="card">
+      <svg id="radar" viewBox="0 0 480 380" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="tblwrap" style="margin-top:8px"><table class="vt" id="c-table"></table></div>
+    </div>
+  </div>
+</section>
+
+<!-- SPIELE -->
+<section id="t-spiele">
+  <div class="card" style="padding:10px 14px">
+    <div class="seg"><button class="btn" data-gv="erf">Erfassen</button><button class="btn" data-gv="eval">Auswertung</button><button class="btn" data-gv="pos">Positionen</button></div>
+  </div>
+  <div id="gv-body"></div>
+</section>
+
+<!-- GESPEICHERT -->
+<section id="t-saved">
+  <div class="card">
+    <div class="row">
+      <button class="btn pri" id="s-new">+ Neue Aufstellung</button>
+      <button class="btn" id="s-export">Export (JSON)</button>
+      <button class="btn" id="s-import">Import</button>
+      <input type="file" id="s-file" accept=".json,application/json" hidden>
+    </div>
+    <div class="muted" style="margin-top:8px">Alles wird automatisch in deinem Konto gespeichert und ist auf Handy, iPad und Laptop gleich. Export = zusätzliches Backup; Import übernimmt z. B. Daten aus der alten Kadertool-Datei.</div>
+  </div>
+  <div class="card">
+    <h2>Aufstellungen</h2>
+    <div id="s-list"></div>
+  </div>
+</section>
+</main>
+
+<div id="ghost"></div>
+<div id="toast"></div>
+
+<script src="../shared/cloud.js"></script>
+<script>
+(function(){
+'use strict';
+const LS='mtv_kadertool_v1';
+const POS=['TW','LA','RL','RM','RR','RA','KM'];
+const POS_NAME={TW:'Torwart',LA:'Linksaußen',RL:'Rückraum links',RM:'Rückraum Mitte',RR:'Rückraum rechts',RA:'Rechtsaußen',KM:'Kreismitte'};
+const SLOTS={
+  angriff:[{k:'LA',x:38,y:72},{k:'KM',x:200,y:158},{k:'RA',x:362,y:72},{k:'RL',x:96,y:232},{k:'RM',x:200,y:262},{k:'RR',x:304,y:232},{k:'TW',x:200,y:372}],
+  abwehr:[{k:'VOR',x:200,y:192},{k:'AL',x:38,y:372},{k:'HL',x:110,y:296},{k:'IN',x:200,y:282},{k:'HR',x:290,y:296},{k:'AR',x:362,y:372},{k:'TW',x:200,y:398}]
+};
+const DEF_NAME={TW:'Torwart',VOR:'Vorgezogener',AL:'Außen links',HL:'Halb links',IN:'Innen',HR:'Halb rechts',AR:'Außen rechts'};
+
+const $=s=>document.querySelector(s);
+const uid=()=>Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);
+const today=()=>new Date().toISOString().slice(0,10);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove('show'),1800);}
+
+/* ---------- State ---------- */
+function newAuf(name){return {id:uid(),name:name||'Neue Aufstellung',datum:today(),gegner:'',fehlt:[],angriff:{},abwehr:{},plan:[]};}
+function legacy(){try{const d=JSON.parse(localStorage.getItem(LS));if(d&&Array.isArray(d.kader)&&Array.isArray(d.auf))return d;}catch(e){}return null;}
+function normalize(d){
+  if(!d||!Array.isArray(d.kader)||!Array.isArray(d.auf))return null;
+  d.cfg=d.cfg||{hz:20,blk:5};if(!Array.isArray(d.bew))d.bew=[];if(!Array.isArray(d.spiele))d.spiele=[];
+  d.auf.forEach(a=>{a.fehlt=a.fehlt||[];a.angriff=a.angriff||{};a.abwehr=a.abwehr||{};a.plan=a.plan||[];});
+  if(!d.auf.length){const a=newAuf('Startaufstellung');d.auf.push(a);d.cur=a.id;}
+  return d;
+}
+function load(){
+  const a=newAuf('Startaufstellung');
+  return {v:1,kader:[],auf:[a],cur:a.id,cfg:{hz:20,blk:5},bew:[],spiele:[]};
+}
+let S=load();
+if(!S.cfg)S.cfg={hz:20,blk:5};
+if(!Array.isArray(S.bew))S.bew=[];
+if(!Array.isArray(S.spiele))S.spiele=[];
+function save(){Cloud.save('kader',S);}
+function cur(){let a=S.auf.find(x=>x.id===S.cur);if(!a){if(!S.auf.length)S.auf.push(newAuf('Startaufstellung'));a=S.auf[0];S.cur=a.id;}return a;}
+const P=id=>S.kader.find(p=>p.id===id);
+const byNr=()=>[...S.kader].sort((a,b)=>((a.nr===''||a.nr==null)?999:+a.nr)-((b.nr===''||b.nr==null)?999:+b.nr)||a.name.localeCompare(b.name));
+const dabei=a=>byNr().filter(p=>!a.fehlt.includes(p.id));
+const short=n=>{n=String(n||'');return n.length>13?n.slice(0,12)+'…':n;};
+const lbl=p=>(p.nr!==''&&p.nr!=null?p.nr+' ':'')+p.name;
+
+/* ---------- Tabs ---------- */
+let tab='auf',mode='angriff',sel=null;
+function setTab(t){
+  tab=t;sel=null;
+  document.querySelectorAll('nav .btn').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  document.querySelectorAll('main section').forEach(s=>s.classList.toggle('act',s.id==='t-'+t));
+  render();
+}
+document.querySelectorAll('nav .btn').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));
+function render(){({kader:renderKader,auf:renderAuf,plan:renderPlan,bew:renderBew,spiele:renderSpiele,saved:renderSaved})[tab]();}
+
+/* ---------- Kader ---------- */
+let kEdit=null,kPos=[];
+function renderKPos(){
+  $('#k-pos').innerHTML=POS.map(k=>`<button class="pchip${kPos.includes(k)?' on':''}" data-k="${k}" title="${POS_NAME[k]}">${k}</button>`).join('');
+}
+$('#k-pos').addEventListener('click',e=>{const b=e.target.closest('[data-k]');if(!b)return;const k=b.dataset.k;kPos=kPos.includes(k)?kPos.filter(x=>x!==k):[...kPos,k];renderKPos();});
+function kReset(){kEdit=null;kPos=[];$('#k-lh').checked=false;$('#k-nr').value='';$('#k-name').value='';$('#k-title').textContent='Spieler hinzufügen';$('#k-save').textContent='Hinzufügen';$('#k-cancel').style.display='none';renderKPos();}
+$('#k-cancel').addEventListener('click',kReset);
+$('#k-save').addEventListener('click',()=>{
+  const name=$('#k-name').value.trim(),nr=$('#k-nr').value.trim(),lh=$('#k-lh').checked;
+  if(!name){toast('Bitte Namen eingeben');return;}
+  if(nr!==''&&S.kader.some(p=>p.id!==kEdit&&String(p.nr)===nr)){if(!confirm('Nr. '+nr+' ist schon vergeben. Trotzdem speichern?'))return;}
+  const pos=POS.filter(k=>kPos.includes(k));
+  if(kEdit){const p=P(kEdit);Object.assign(p,{name,nr,pos,lh});toast('Gespeichert');}
+  else{S.kader.push({id:uid(),name,nr,pos,lh});toast(name+' hinzugefügt');}
+  save();kReset();renderKader();$('#k-name').focus();
+});
+function renderKader(){
+  const list=byNr();
+  $('#k-count').textContent='('+list.length+')';
+  $('#k-list').innerHTML=list.length?list.map(p=>`<div class="item"><div class="nrb">${esc(p.nr)}</div><div class="grow"><b>${esc(p.name)}</b>${(p.pos||[]).map(k=>`<span class="tag">${k}</span>`).join('')||'<span class="muted">keine Position</span>'}${p.lh?'<span class="tag" style="background:var(--silver);color:#0d0e11">Linkshänder</span>':''}</div><button class="btn sm" data-edit="${p.id}">Bearbeiten</button><button class="btn sm del" data-del="${p.id}">✕</button></div>`).join(''):'<div class="muted">Noch keine Spieler angelegt.</div>';
+}
+$('#k-list').addEventListener('click',e=>{
+  const ed=e.target.closest('[data-edit]'),dl=e.target.closest('[data-del]');
+  if(ed){const p=P(ed.dataset.edit);kEdit=p.id;kPos=[...(p.pos||[])];$('#k-nr').value=p.nr;$('#k-name').value=p.name;$('#k-lh').checked=!!p.lh;$('#k-title').textContent='Spieler bearbeiten';$('#k-save').textContent='Speichern';$('#k-cancel').style.display='';renderKPos();window.scrollTo({top:0,behavior:'smooth'});}
+  if(dl){const p=P(dl.dataset.del);if(!confirm(p.name+' aus dem Kader löschen? Er wird auch aus allen Aufstellungen und Bewertungen entfernt.'))return;removePlayer(p.id);S.bew=S.bew.filter(b=>b.sid!==p.id);S.spiele.forEach(g=>{g.teil=g.teil.filter(x=>x!==p.id);delete g.sp[p.id];});S.kader=S.kader.filter(x=>x.id!==p.id);save();renderKader();}
+});
+function removePlayer(id,onlyAuf){
+  (onlyAuf?[onlyAuf]:S.auf).forEach(a=>{
+    ['angriff','abwehr'].forEach(m=>{for(const k in a[m])if(a[m][k]===id)delete a[m][k];});
+    (a.plan||[]).forEach(b=>{for(const k in b)if(b[k]===id)delete b[k];});
+    if(!onlyAuf)a.fehlt=a.fehlt.filter(x=>x!==id);
+  });
+}
+
+/* ---------- Aufstellung ---------- */
+function court(flip){
+  const L='stroke="#c9ced6" stroke-width="2" fill="none"';
+  return `<g${flip?' transform="rotate(180 200 220)"':''}>
+  <rect x="0" y="20" width="400" height="400" fill="#1a1c21"/>
+  <path d="M50 20 A120 120 0 0 0 170 140 L230 140 A120 120 0 0 0 350 20 Z" fill="#d0152b" fill-opacity=".16"/>
+  <path d="M50 20 A120 120 0 0 0 170 140 L230 140 A120 120 0 0 0 350 20" ${L}/>
+  <path d="M-10 20 A180 180 0 0 0 170 200 L230 200 A180 180 0 0 0 410 20" ${L} stroke-dasharray="10 8" opacity=".8"/>
+  <line x1="190" y1="160" x2="210" y2="160" ${L}/>
+  <line x1="193" y1="100" x2="207" y2="100" ${L}/>
+  <rect x="1" y="20" width="398" height="400" ${L}/>
+  <line x1="0" y1="420" x2="400" y2="420" stroke="#d0152b" stroke-width="3"/>
+  <rect x="170" y="6" width="60" height="14" fill="#0d0e11" stroke="#d0152b" stroke-width="3"/>
+  </g>`;
+}
+function warn(p,k){
+  if(!p.pos||!p.pos.length)return false;
+  if(mode==='angriff')return !p.pos.includes(k)&&!(p.lh&&(k==='RA'||k==='RR'));
+  const tw=p.pos.includes('TW');
+  return k==='TW'?!tw:(tw&&p.pos.length===1);
+}
+function cleanAuf(a){ // entfernt gelöschte/fehlende Spieler
+  ['angriff','abwehr'].forEach(m=>{for(const k in a[m]){const p=P(a[m][k]);if(!p||a.fehlt.includes(p.id))delete a[m][k];}});
+}
+function renderAuf(){
+  const a=cur();cleanAuf(a);
+  const act=document.activeElement;
+  if(act!==$('#a-name'))$('#a-name').value=a.name;
+  if(act!==$('#a-datum'))$('#a-datum').value=a.datum||'';
+  if(act!==$('#a-gegner'))$('#a-gegner').value=a.gegner||'';
+  document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('on',b.dataset.mode===mode));
+  const m=a[mode];let svg=court(mode==='abwehr');
+  svg+=`<text x="200" y="${mode==='abwehr'?36:436}" style="fill:#8b919b;font-size:11px;font-weight:700">${mode==='abwehr'?'▼ Blick der Abwehr · eigenes Tor unten':'▲ Angriffsrichtung'}</text>`;
+  SLOTS[mode].forEach(s=>{
+    const p=m[s.k]&&P(m[s.k]);
+    if(p){
+      const isSel=sel&&sel.pid===p.id,w=warn(p,s.k),vb=S.cfg.vals?modeVal(p):null;
+      svg+=`<g class="tok" data-slot="${s.k}" data-pid="${p.id}" transform="translate(${s.x} ${s.y})">
+        <circle r="26" fill="transparent"/>
+        <circle r="21" fill="#d0152b" stroke="${isSel?'#ffd166':'#e9ecef'}" stroke-width="${isSel?4:2.5}"/>
+        <text class="nr" y="6">${esc(p.nr)}</text>
+        ${p.lh?'<g transform="translate(17 14)"><circle r="7.5" fill="#c9ced6" stroke="#0d0e11" stroke-width="1.5"/><text y="3.5" style="fill:#0d0e11;font-size:10px;font-weight:900">L</text></g>':''}
+        <text class="pk" y="-26">${s.k}</text>
+        <text class="nm" y="37">${esc(short(p.name))}</text>
+        ${w?'<g transform="translate(17 -15)"><circle r="8" fill="#ffb020"/><text class="wx" y="4">!</text></g>':''}
+        ${vb!=null?`<g transform="translate(-21 -17)"><rect x="-14" y="-9" width="28" height="17" rx="5" fill="#2a2410" stroke="#ffd166" stroke-width="1"/><text y="4" style="fill:#ffd166;font-size:11px;font-weight:800">${fmt(vb)}</text></g>`:''}
+      </g>`;
+    }else{
+      svg+=`<g class="slot" data-slot="${s.k}" transform="translate(${s.x} ${s.y})">
+        <circle r="21" fill="${sel&&!sel.pid&&sel.slot===s.k?'#3a3420':'#23262c'}" stroke="${sel?'#ffd166':'#8b919b'}" stroke-dasharray="4 4" stroke-width="2"/>
+        <text class="pl" y="5">${s.k}</text></g>`;
+    }
+  });
+  $('#court').innerHTML=svg;
+  const placed=Object.values(m);
+  const bench=dabei(a).filter(p=>!placed.includes(p.id));
+  $('#bench').innerHTML=bench.length?bench.map(p=>`<div class="chip${sel&&sel.pid===p.id?' sel':''}" data-pid="${p.id}" data-from="bench"><b>${esc(p.nr)}</b>${esc(p.name)}${p.lh?' <em class="lhs">L</em>':''} <small>${(p.pos||[]).join('/')}</small>${S.cfg.vals&&modeVal(p)!=null?' <em class="vb">'+fmt(modeVal(p))+'</em>':''}</div>`).join(''):`<div class="muted">${S.kader.length?'Alle verfügbaren Spieler sind aufgestellt.':'Erst im Reiter „Kader" Spieler anlegen.'}</div>`;
+  $('#attend').innerHTML=byNr().map(p=>`<label class="att"><input type="checkbox" data-att="${p.id}"${a.fehlt.includes(p.id)?'':' checked'}> <b>${esc(p.nr)}</b> ${esc(p.name)}</label>`).join('')||'<div class="muted">Kein Kader.</div>';
+  const n=Object.keys(m).length,d=dabei(a).length;
+  let h=`${n}/7 Positionen besetzt · ${d} Spieler dabei`;
+  if(sel&&sel.pid){const p=P(sel.pid);h=`<b>${esc(lbl(p))}</b> gewählt – Position antippen${sel.slot?' oder „Auf Bank"':''}`;}
+  else if(sel&&sel.slot)h=`Position <b>${sel.slot}</b> gewählt – Spieler antippen oder Vorschlag wählen`;
+  $('#hint').innerHTML=h;
+  $('#a-tobench').style.display=sel&&sel.pid&&sel.slot?'':'none';
+  const vb=$('#a-vals');vb.classList.toggle('on',!!S.cfg.vals);vb.textContent=S.cfg.vals?'Werte an':'Werte aus';
+  renderSide(a,m);
+}
+['name','datum','gegner'].forEach(f=>$('#a-'+f).addEventListener('input',e=>{cur()[f]=e.target.value;save();}));
+document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{mode=b.dataset.mode;sel=null;renderAuf();}));
+$('#a-clear').addEventListener('click',()=>{if(!confirm('Alle Positionen in „'+(mode==='angriff'?'Angriff':'Abwehr')+'" leeren?'))return;cur()[mode]={};sel=null;save();renderAuf();});
+$('#a-tobench').addEventListener('click',()=>{if(sel&&sel.slot){delete cur()[mode][sel.slot];sel=null;save();renderAuf();}});
+$('#attend').addEventListener('change',e=>{
+  const id=e.target.dataset.att;if(!id)return;const a=cur();
+  if(e.target.checked)a.fehlt=a.fehlt.filter(x=>x!==id);
+  else{a.fehlt.push(id);removePlayer(id,a);}
+  sel=null;save();renderAuf();
+});
+
+function assign(pid,to,fromSlot){
+  const m=cur()[mode],prev=m[to];
+  for(const k in m)if(m[k]===pid)delete m[k];
+  m[to]=pid;
+  if(prev&&prev!==pid&&fromSlot)m[fromSlot]=prev; // Tausch
+  save();
+}
+
+/* Drag & Tap (Pointer Events) */
+let drag=null;
+const ghost=$('#ghost');
+document.addEventListener('pointerdown',e=>{
+  if(tab!=='auf')return;
+  const t=e.target.closest('[data-pid],[data-slot]');
+  if(!t||!(t.closest('#court')||t.closest('#bench')))return;
+  drag={pid:t.getAttribute('data-pid'),slot:t.getAttribute('data-slot'),x0:e.clientX,y0:e.clientY,moved:false};
+  e.preventDefault();
+});
+document.addEventListener('pointermove',e=>{
+  if(!drag||!drag.pid)return;
+  if(!drag.moved&&Math.hypot(e.clientX-drag.x0,e.clientY-drag.y0)>8){drag.moved=true;const p=P(drag.pid);ghost.textContent=p?p.nr||'•':'';ghost.style.display='flex';}
+  if(drag.moved){ghost.style.left=e.clientX+'px';ghost.style.top=e.clientY+'px';}
+});
+document.addEventListener('pointerup',e=>{
+  if(!drag)return;const d=drag;drag=null;ghost.style.display='none';
+  if(d.moved){
+    const el=document.elementFromPoint(e.clientX,e.clientY);
+    const slotEl=el&&el.closest('#court [data-slot]');
+    if(slotEl)assign(d.pid,slotEl.getAttribute('data-slot'),d.slot);
+    else if(el&&el.closest('[data-drop="bench"]')&&d.slot){delete cur()[mode][d.slot];save();}
+    sel=null;renderAuf();return;
+  }
+  // Tap
+  if(sel&&sel.pid&&d.slot&&sel.pid!==d.pid){assign(sel.pid,d.slot,sel.slot);sel=null;}
+  else if(sel&&!sel.pid&&d.pid&&!d.slot){assign(d.pid,sel.slot,null);sel=null;}
+  else if(d.pid)sel=(sel&&sel.pid===d.pid)?null:{pid:d.pid,slot:d.slot};
+  else if(d.slot)sel=(sel&&!sel.pid&&sel.slot===d.slot)?null:{pid:null,slot:d.slot};
+  else sel=null;
+  renderAuf();
+});
+document.addEventListener('pointercancel',()=>{drag=null;ghost.style.display='none';});
+
+/* ---------- Wechselplan ---------- */
+function blocks(){
+  const hz=+S.cfg.hz,blk=+S.cfg.blk,out=[];
+  for(let h=1;h<=2;h++)for(let s=0;s<hz;s+=blk)out.push({hz:h,start:s,len:Math.min(blk,hz-s)});
+  return out;
+}
+function planEnsure(a){const n=blocks().length;if(!Array.isArray(a.plan))a.plan=[];while(a.plan.length<n)a.plan.push({});a.plan.length=n;}
+function renderPlan(){
+  const a=cur();planEnsure(a);
+  a.plan.forEach(b=>{for(const k in b){const p=P(b[k]);if(!p||a.fehlt.includes(p.id))delete b[k];}});
+  $('#p-hz').value=S.cfg.hz;$('#p-blk').value=S.cfg.blk;
+  $('#p-name').textContent='· '+a.name+(a.gegner?' vs. '+a.gegner:'');
+  const bl=blocks(),pl=dabei(a);
+  let h='<tr><th></th>'+bl.map((b,i)=>`<th class="${b.hz===2&&b.start===0?'hz2':''}">${b.hz}. HZ<br>${b.start}–${b.start+b.len}'${i<bl.length-1?` <button class="cp" data-copy="${i}" title="In nächsten Block kopieren">⇥</button>`:''}</th>`).join('')+'</tr>';
+  POS.forEach(k=>{
+    h+=`<tr><td class="pos">${k}</td>`;
+    bl.forEach((b,i)=>{
+      const blk=a.plan[i],v=blk[k]||'';
+      const dup=v&&Object.keys(blk).filter(x=>blk[x]===v).length>1;
+      h+=`<td class="${b.hz===2&&b.start===0?'hz2':''}"><select data-b="${i}" data-p="${k}" class="${dup?'dup':''}"><option value="">–</option>${pl.map(p=>`<option value="${p.id}"${p.id===v?' selected':''}>${esc(short(lbl(p)))}</option>`).join('')}</select></td>`;
+    });
+    h+='</tr>';
+  });
+  if(S.cfg.vals){
+    const bs=bl.map((b,i)=>{const v=POS.map(k=>a.plan[i][k]).filter(Boolean).map(id=>ovr(P(id))).filter(x=>x!=null);return v.length?v.reduce((x,y)=>x+y,0)/v.length:null;});
+    const ok=bs.filter(x=>x!=null),m=ok.length?ok.reduce((x,y)=>x+y,0)/ok.length:0;
+    h+='<tr class="str"><td class="pos">Ø</td>'+bs.map((v,i)=>`<td class="${bl[i].hz===2&&bl[i].start===0?'hz2':''}" style="color:${v==null?'var(--muted)':(v<m-.3?'var(--red2)':v>m+.3?'var(--ok)':'var(--sel)')}">${fmt(v)}</td>`).join('')+'</tr>';
+  }
+  $('#p-table').innerHTML=h;
+  const pv=$('#p-vals');pv.classList.toggle('on',!!S.cfg.vals);pv.textContent=S.cfg.vals?'Werte an':'Werte aus';
+  // Einsatzzeiten
+  const mins={};bl.forEach((b,i)=>{const blk=a.plan[i];POS.forEach(k=>{const id=blk[k];if(id)mins[id]=(mins[id]||0)+b.len;});});
+  const total=2*S.cfg.hz,soll=pl.length?total*7/pl.length:0;
+  $('#p-times').innerHTML=pl.length?pl.map(p=>{
+    const m=mins[p.id]||0,r=soll?m/Math.min(soll,total):0;
+    const c=r>=.8?'var(--ok)':r>=.5?'var(--warn)':'var(--red2)';
+    return `<div class="zrow"><span class="nm2"><b>${esc(p.nr)}</b> ${esc(p.name)}</span><span class="bar"><i style="width:${m/total*100}%;background:${c}"></i><u style="left:${Math.min(soll,total)/total*100}%"></u></span><span class="min">${m}'</span></div>`;
+  }).join('')+`<div class="muted" style="margin-top:6px">Soll bei ${pl.length} Spielern: ca. ${Math.round(Math.min(soll,total))}' pro Spieler</div>`:'<div class="muted">Keine Spieler dabei.</div>';
+}
+$('#p-table').addEventListener('change',e=>{
+  const s=e.target;if(!s.dataset.b)return;const b=cur().plan[+s.dataset.b];
+  if(s.value)b[s.dataset.p]=s.value;else delete b[s.dataset.p];
+  save();renderPlan();
+});
+$('#p-table').addEventListener('click',e=>{const c=e.target.closest('[data-copy]');if(!c)return;const a=cur(),i=+c.dataset.copy;a.plan[i+1]={...a.plan[i]};save();renderPlan();});
+function fromAngriff(){const o={};POS.forEach(k=>{if(cur().angriff[k])o[k]=cur().angriff[k];});return o;}
+$('#p-first').addEventListener('click',()=>{const a=cur();planEnsure(a);a.plan[0]=fromAngriff();save();renderPlan();});
+$('#p-all').addEventListener('click',()=>{const a=cur();planEnsure(a);if(a.plan.some(b=>Object.keys(b).length)&&!confirm('Vorhandenen Plan überschreiben?'))return;a.plan=a.plan.map(()=>fromAngriff());save();renderPlan();});
+$('#p-clear').addEventListener('click',()=>{if(!confirm('Wechselplan leeren?'))return;cur().plan=[];save();renderPlan();});
+$('#p-hz').addEventListener('change',e=>{if(!confirm('Spielzeit ändern? Blöcke werden neu eingeteilt (bestehende Zuordnungen nach Blocknummer).')){e.target.value=S.cfg.hz;return;}S.cfg.hz=+e.target.value;save();renderPlan();});
+$('#p-blk').addEventListener('change',e=>{if(!confirm('Blocklänge ändern? Blöcke werden neu eingeteilt (bestehende Zuordnungen nach Blocknummer).')){e.target.value=S.cfg.blk;return;}S.cfg.blk=+e.target.value;save();renderPlan();});
+
+/* ---------- Gespeichert ---------- */
+function renderSaved(){
+  const list=[...S.auf].sort((a,b)=>(b.datum||'').localeCompare(a.datum||''));
+  $('#s-list').innerHTML=list.map(a=>{
+    const n=Object.keys(a.angriff).length,d=Object.keys(a.abwehr).length;
+    const dt=a.datum?a.datum.split('-').reverse().join('.'):'';
+    return `<div class="item${a.id===S.cur?' cur':''}"><div class="grow"><b>${esc(a.name)}${a.gegner?' <span class="muted">vs. '+esc(a.gegner)+'</span>':''}</b><span class="muted">${dt} · Angriff ${n}/7 · Abwehr ${d}/7${a.id===S.cur?' · <span style="color:var(--red2)">aktiv</span>':''}</span></div>
+    <button class="btn sm" data-load="${a.id}">Öffnen</button><button class="btn sm" data-dup="${a.id}">Kopie</button><button class="btn sm del" data-rm="${a.id}">✕</button></div>`;
+  }).join('');
+}
+$('#s-list').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.load){S.cur=b.dataset.load;save();setTab('auf');}
+  if(b.dataset.dup){const o=JSON.parse(JSON.stringify(S.auf.find(x=>x.id===b.dataset.dup)));o.id=uid();o.name+=' (Kopie)';S.auf.push(o);S.cur=o.id;save();renderSaved();toast('Kopie erstellt');}
+  if(b.dataset.rm){const a=S.auf.find(x=>x.id===b.dataset.rm);if(!confirm('„'+a.name+'" löschen?'))return;S.auf=S.auf.filter(x=>x.id!==a.id);cur();save();renderSaved();}
+});
+$('#s-new').addEventListener('click',()=>{const a=newAuf();S.auf.push(a);S.cur=a.id;save();setTab('auf');$('#a-name').select();});
+$('#s-export').addEventListener('click',()=>{
+  const blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
+  const u=URL.createObjectURL(blob),l=document.createElement('a');
+  l.href=u;l.download='mtv_kadertool_'+today()+'.json';document.body.appendChild(l);l.click();l.remove();
+  setTimeout(()=>URL.revokeObjectURL(u),2000);
+});
+$('#s-import').addEventListener('click',()=>$('#s-file').click());
+$('#s-file').addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{
+    try{const d=JSON.parse(r.result);if(!Array.isArray(d.kader)||!Array.isArray(d.auf))throw 0;
+      if(!confirm('Import ersetzt alle Daten auf diesem Gerät ('+d.kader.length+' Spieler, '+d.auf.length+' Aufstellungen). Fortfahren?'))return;
+      d.cfg=d.cfg||{hz:20,blk:5};d.bew=d.bew||[];d.spiele=d.spiele||[];d.auf.forEach(a=>{a.fehlt=a.fehlt||[];a.angriff=a.angriff||{};a.abwehr=a.abwehr||{};a.plan=a.plan||[];});
+      S=d;cur();save();toast('Import erfolgreich');render();
+    }catch(err){toast('Datei ungültig');}
+    e.target.value='';
+  };
+  r.readAsText(f);
+});
+
+/* ---------- Bewertung ---------- */
+const CATS=[
+ {k:'ang',n:'Angriff',s:'Angriff',items:[['wurf','Wurf'],['pass','Passen/Fangen'],['1v1','1:1/Prellen'],['taeu','Täuschung/Durchbruch'],['frei','Freilaufen/Anbieten'],['zus','Zusammenspiel']]},
+ {k:'abw',n:'Abwehr',s:'Abwehr',items:[['bein','Beinarbeit/Grundstellung'],['1v1','1:1-Abwehr'],['ball','Ballgewinn/Antizipation'],['help','Helfen/Zusammenarbeit'],['rueck','Rückzug nach Ballverlust'],['fair','Fairer Zweikampf']]},
+ {k:'spv',n:'Spielverständnis',s:'Spielverständnis',items:[['ueber','Übersicht'],['ents','Entscheidungen'],['umsch','Umschalten/Gegenstoß'],['regel','Regelkenntnis'],['posv','Positionsvariabilität'],['komm','Kommunikation']]},
+ {k:'lf',n:'Leistungsfähigkeit',s:'Leistungsfähigkeit',items:[['schn','Schnelligkeit'],['ausd','Ausdauer'],['koord','Koordination'],['sprung','Sprungkraft'],['konst','Konstanz übers Spiel'],['beid','Beidseitigkeit']]},
+ {k:'lw',n:'Leistungswille & Persönlichkeit',s:'Wille & Persönlichkeit',items:[['eins','Einsatz'],['fleiss','Trainingsfleiß'],['team','Teamgeist'],['krit','Umgang mit Kritik'],['selbst','Selbstvertrauen unter Druck'],['respekt','Fairness/Respekt']]},
+ {k:'tw',n:'Torwart',s:'Torwart',tw:true,items:[['tech','Grundtechnik/Stellung'],['reak','Reaktion'],['anti','Antizipation'],['abw','Zusammenarbeit mit Abwehr'],['gegen','Gegenstoßeinleitung']]}
+];
+const MAIN=CATS.filter(c=>!c.tw);
+const COLORS=['#ff3347','#3ec1ff','#ffd166','#5dd39e','#c58cff','#ff8a00'];
+const isTW=p=>p&&(p.pos||[]).includes('TW');
+const catsFor=p=>CATS.filter(c=>!c.tw||isTW(p));
+let bv='erf',bSid=null,bDat=today();
+const CH={mode:'over',sel:[],pos:'',stand:'',avg:true,verl:false};
+
+const entry=(sid,d)=>S.bew.find(b=>b.sid===sid&&b.datum===d);
+const entriesOf=sid=>S.bew.filter(b=>b.sid===sid).sort((a,b)=>a.datum.localeCompare(b.datum));
+function latest(sid,bis){const l=entriesOf(sid).filter(b=>!bis||b.datum<=bis);return l[l.length-1]||null;}
+function catAvg(e,c){if(!e)return null;const v=c.items.map(i=>e.w[c.k+'.'+i[0]]).filter(x=>x);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;}
+const fmt=v=>v==null?'–':(Math.round(v*10)/10).toString().replace('.',',');
+
+document.querySelectorAll('[data-bv]').forEach(b=>b.addEventListener('click',()=>{bv=b.dataset.bv;renderBew();}));
+function renderBew(){
+  document.querySelectorAll('[data-bv]').forEach(b=>b.classList.toggle('on',b.dataset.bv===bv));
+  $('#bv-erf').style.display=bv==='erf'?'':'none';
+  $('#bv-dia').style.display=bv==='dia'?'':'none';
+  bv==='erf'?renderErf():renderDia();
+}
+
+/* Erfassen */
+function renderErf(){
+  const list=byNr();
+  if(!list.length){$('#b-sp').innerHTML='';$('#b-cats').innerHTML='<div class="card muted">Erst im Reiter „Kader" Spieler anlegen.</div>';$('#b-hist').innerHTML='';return;}
+  if(!P(bSid))bSid=list[0].id;
+  $('#b-sp').innerHTML=list.map(p=>`<option value="${p.id}"${p.id===bSid?' selected':''}>${esc(lbl(p))}</option>`).join('');
+  if(document.activeElement!==$('#b-dat'))$('#b-dat').value=bDat;
+  const p=P(bSid),e=entry(bSid,bDat);
+  const hist=entriesOf(bSid);
+  $('#b-hist').innerHTML=hist.length?'<span class="muted">Bewertungen: </span>'+hist.map(b=>`<span class="dchip${b.datum===bDat?' on':''}" data-d="${b.datum}">${b.datum.split('-').reverse().join('.')}</span>`).join(''):'<span class="muted">Noch keine Bewertung für diesen Spieler.</span>';
+  $('#b-cats').innerHTML=catsFor(p).map(c=>`<div class="card"><div class="cath"><h2>${c.n}</h2><span class="avg">Ø ${fmt(catAvg(e,c))}</span></div>`+
+    c.items.map(i=>{const key=c.k+'.'+i[0],v=e?e.w[key]:0;
+      return `<div class="scrow"><span class="lb">${i[1]}</span><span class="bt">${[1,2,3,4,5].map(n=>`<button class="sc${v===n?' on':''}" data-key="${key}" data-v="${n}">${n}</button>`).join('')}</span></div>`;}).join('')+'</div>').join('');
+  if(document.activeElement!==$('#b-notiz'))$('#b-notiz').value=e?e.notiz||'':'';
+  $('#b-del').style.display=e?'':'none';
+}
+function ensureEntry(){let e=entry(bSid,bDat);if(!e){e={id:uid(),sid:bSid,datum:bDat,w:{},notiz:''};S.bew.push(e);}return e;}
+function pruneEntry(e){if(e&&!Object.keys(e.w).length&&!e.notiz)S.bew=S.bew.filter(b=>b!==e);}
+$('#b-cats').addEventListener('click',ev=>{
+  const b=ev.target.closest('[data-key]');if(!b||!bSid)return;
+  const e=ensureEntry(),k=b.dataset.key,v=+b.dataset.v;
+  if(e.w[k]===v)delete e.w[k];else e.w[k]=v;
+  pruneEntry(e);save();renderErf();
+});
+$('#b-sp').addEventListener('change',e=>{bSid=e.target.value;renderErf();});
+$('#b-dat').addEventListener('change',e=>{bDat=e.target.value||today();renderErf();});
+$('#b-hist').addEventListener('click',ev=>{const c=ev.target.closest('[data-d]');if(!c)return;bDat=c.dataset.d;renderErf();});
+$('#b-notiz').addEventListener('input',ev=>{if(!bSid)return;const e=ensureEntry();e.notiz=ev.target.value;pruneEntry(e);save();});
+$('#b-notiz').addEventListener('blur',()=>renderErf());
+$('#b-copy').addEventListener('click',()=>{
+  if(!bSid)return;const prev=entriesOf(bSid).filter(b=>b.datum<bDat).pop();
+  if(!prev){toast('Keine frühere Bewertung');return;}
+  const e=entry(bSid,bDat);if(e&&Object.keys(e.w).length&&!confirm('Vorhandene Werte vom '+bDat.split('-').reverse().join('.')+' überschreiben?'))return;
+  const n=ensureEntry();n.w={...prev.w};save();renderErf();toast('Werte vom '+prev.datum.split('-').reverse().join('.')+' übernommen');
+});
+$('#b-del').addEventListener('click',()=>{const e=entry(bSid,bDat);if(!e||!confirm('Bewertung vom '+bDat.split('-').reverse().join('.')+' löschen?'))return;S.bew=S.bew.filter(b=>b!==e);save();renderErf();});
+
+/* Sterndiagramm */
+function axesFor(){
+  if(CH.mode==='over')return MAIN.map(c=>({label:c.s,val:e=>catAvg(e,c)}));
+  const c=CATS.find(x=>x.k===CH.mode);
+  return c.items.map(i=>({label:i[1],val:e=>e?(e.w[c.k+'.'+i[0]]||null):null}));
+}
+function wrap(t){if(t.length<=14)return [t];const w=t.replace(/\//g,'/ ').split(' ');let a='',b='';const j=(s,x)=>s?s+(s.endsWith('/')?'':' ')+x:x;for(const x of w){if(!b&&(!a||j(a,x).length<=14))a=j(a,x);else b=j(b,x);}return [a,b].filter(Boolean);}
+function radarSVG(axes,series,fs){fs=fs||12;
+  const cx=240,cy=190,R=125,n=axes.length;
+  const pt=(i,v)=>{const a=(-90+360*i/n)*Math.PI/180;return [cx+Math.cos(a)*R*v/5,cy+Math.sin(a)*R*v/5];};
+  let g='';
+  for(let r=1;r<=5;r++){g+=`<polygon points="${axes.map((_,i)=>pt(i,r).join(',')).join(' ')}" fill="${r%2?'rgba(255,255,255,.025)':'none'}" stroke="#2b2f37" stroke-width="${r===3?1.5:1}"/>`;}
+  axes.forEach((ax,i)=>{const [x,y]=pt(i,5);g+=`<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#2b2f37"/>`;
+    const a=(-90+360*i/n)*Math.PI/180,lx=cx+Math.cos(a)*(R+16),ly=cy+Math.sin(a)*(R+16);
+    const anc=Math.abs(Math.cos(a))<.2?'middle':(Math.cos(a)>0?'start':'end');
+    const lines=wrap(ax.label),dy=Math.sin(a)<-.5?-(lines.length-1)*fs:(Math.sin(a)>.5?fs*.7:4-(lines.length-1)*fs/2);
+    g+=`<text x="${lx}" y="${ly+dy}" text-anchor="${anc}" style="fill:#c9ced6;font-size:${fs}px;font-weight:700">${lines.map((l,j)=>`<tspan x="${lx}" dy="${j?fs+1:0}">${esc(l)}</tspan>`).join('')}</text>`;});
+  for(let r=1;r<=5;r++)g+=`<text x="${cx+3}" y="${cy-R*r/5-2}" style="fill:#5d636d;font-size:9px">${r}</text>`;
+  series.forEach(s=>{
+    const pts=s.vals.map((v,i)=>pt(i,v||0));
+    g+=`<polygon points="${pts.map(p=>p.join(',')).join(' ')}" fill="${s.color}" fill-opacity="${s.dash?0:.16}" stroke="${s.color}" stroke-width="${s.dash?2:2.5}"${s.dash?' stroke-dasharray="6 5"':''} stroke-linejoin="round"/>`;
+    if(!s.dash)pts.forEach((p,i)=>{if(s.vals[i])g+=`<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="${s.color}"/>`;});
+  });
+  return g;
+}
+function renderDia(){
+  const modes=[{k:'over',n:'Übersicht'}].concat(CATS.map(c=>({k:c.k,n:c.s})));
+  $('#c-mode').innerHTML=modes.map(m=>`<button class="btn sm${CH.mode===m.k?' on':''}" data-cm="${m.k}">${m.n}</button>`).join('');
+  $('#c-pos').innerHTML='<option value="">Alle</option>'+POS.map(k=>`<option${CH.pos===k?' selected':''}>${k}</option>`).join('');
+  const dates=[...new Set(S.bew.map(b=>b.datum))].sort().reverse();
+  if(CH.stand&&!dates.includes(CH.stand))CH.stand='';
+  $('#c-stand').innerHTML='<option value="">Neueste</option>'+dates.map(d=>`<option value="${d}"${CH.stand===d?' selected':''}>bis ${d.split('-').reverse().join('.')}</option>`).join('');
+  $('#c-avg').checked=CH.avg;$('#c-verl').checked=CH.verl;
+  const twMode=CH.mode==='tw';
+  let pool=byNr().filter(p=>(!CH.pos||(p.pos||[]).includes(CH.pos))&&(!twMode||isTW(p)));
+  CH.sel=CH.sel.filter(id=>P(id));
+  $('#c-players').innerHTML=pool.length?pool.map(p=>{const i=CH.sel.indexOf(p.id),c=i>=0?COLORS[i%COLORS.length]:'';const has=!!latest(p.id,CH.stand);
+    return `<span class="pchip2" data-cp="${p.id}" style="${c?'border-color:'+c:''}${has?'':';opacity:.45'}"><i style="${c?'background:'+c:''}"></i>${esc(lbl(p))}</span>`;}).join(''):'<span class="muted">Keine passenden Spieler.</span>';
+  const axes=axesFor(),series=[];
+  // Mannschaftsdurchschnitt
+  if(CH.avg){
+    const es=pool.map(p=>latest(p.id,CH.stand)).filter(Boolean);
+    if(es.length){series.push({name:'Ø Mannschaft ('+es.length+')',color:'#c9ced6',dash:true,vals:axes.map(a=>{const v=es.map(e=>a.val(e)).filter(x=>x!=null);return v.length?v.reduce((s,x)=>s+x,0)/v.length:null;})});}
+  }
+  const visSel=CH.sel.filter(id=>pool.some(p=>p.id===id));
+  if(CH.verl&&visSel.length===1){
+    const id=visSel[0],first=entriesOf(id)[0],last=latest(id,CH.stand),c=COLORS[CH.sel.indexOf(id)%COLORS.length];
+    if(first&&last&&first!==last)series.push({name:'erste ('+first.datum.split('-').reverse().join('.')+')',color:'#8b919b',vals:axes.map(a=>a.val(first))});
+    if(last)series.push({name:P(id).name+' ('+last.datum.split('-').reverse().join('.')+')',color:c,vals:axes.map(a=>a.val(last))});
+  }else{
+    visSel.forEach(id=>{const e=latest(id,CH.stand);if(e)series.push({name:P(id).name,color:COLORS[CH.sel.indexOf(id)%COLORS.length],vals:axes.map(a=>a.val(e))});});
+  }
+  $('#radar').innerHTML=radarSVG(axes,series);
+  let info='';
+  if(CH.verl&&visSel.length!==1)info='Verlauf: genau einen Spieler wählen.';
+  else if(!S.bew.length)info='Noch keine Bewertungen erfasst.';
+  else if(!visSel.length)info='Spieler antippen, um ihn einzublenden (bis zu 6).';
+  $('#c-info').textContent=info;
+  $('#c-table').innerHTML=series.length?'<tr><th></th>'+series.map(s=>`<th style="color:${s.color}">${esc(s.name)}</th>`).join('')+'</tr>'+
+    axes.map((a,i)=>`<tr><td>${esc(a.label)}</td>${series.map(s=>`<td>${fmt(s.vals[i])}</td>`).join('')}</tr>`).join(''):'';
+}
+$('#c-mode').addEventListener('click',e=>{const b=e.target.closest('[data-cm]');if(!b)return;CH.mode=b.dataset.cm;renderDia();});
+$('#c-pos').addEventListener('change',e=>{CH.pos=e.target.value;renderDia();});
+$('#c-stand').addEventListener('change',e=>{CH.stand=e.target.value;renderDia();});
+$('#c-avg').addEventListener('change',e=>{CH.avg=e.target.checked;renderDia();});
+$('#c-verl').addEventListener('change',e=>{CH.verl=e.target.checked;renderDia();});
+$('#c-players').addEventListener('click',e=>{const c=e.target.closest('[data-cp]');if(!c)return;const id=c.dataset.cp;
+  if(CH.sel.includes(id))CH.sel=CH.sel.filter(x=>x!==id);else{if(CH.sel.length>=6){toast('Maximal 6 Spieler');return;}CH.sel.push(id);}renderDia();});
+
+/* ---------- Zusammenführung ---------- */
+const lastE=p=>p?latest(p.id,''):null;
+function ovr(p){const e=lastE(p);if(!e)return null;const v=MAIN.map(c=>catAvg(e,c)).filter(x=>x!=null);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;}
+function modeVal(p){const e=lastE(p);if(!e)return null;
+  return catAvg(e,CATS.find(c=>c.k===(mode==='angriff'?'ang':'abw')));}
+function twVal(p){return catAvg(lastE(p),CATS.find(c=>c.k==='tw'));}
+const FIT={
+ angriff:{TW:['tw.*'],LA:['ang.wurf','ang.frei','lf.schn','ang.taeu','ang.pass'],RA:['ang.wurf','ang.frei','lf.schn','ang.taeu','ang.pass'],
+   RL:['ang.wurf','ang.pass','ang.1v1','ang.taeu','spv.ents'],RR:['ang.wurf','ang.pass','ang.1v1','ang.taeu','spv.ents'],
+   RM:['ang.pass','spv.ueber','spv.ents','ang.zus','ang.1v1'],KM:['ang.pass','ang.zus','ang.frei','ang.wurf','lf.sprung']},
+ abwehr:{TW:['tw.*'],VOR:['abw.ball','lf.schn','abw.1v1','spv.umsch','abw.bein'],
+   AL:['abw.bein','abw.1v1','lf.schn','abw.rueck'],AR:['abw.bein','abw.1v1','lf.schn','abw.rueck'],
+   HL:['abw.1v1','abw.help','abw.bein','abw.ball'],HR:['abw.1v1','abw.help','abw.bein','abw.ball'],
+   IN:['abw.help','abw.1v1','abw.fair','spv.komm','lf.sprung']}
+};
+function fit(p,slot){
+  const e=lastE(p);if(!e)return null;const keys=FIT[mode][slot];
+  if(keys[0]==='tw.*')return twVal(p);
+  const v=keys.map(k=>e.w[k]).filter(x=>x);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;
+}
+function renderSide(a,m){
+  let h='';
+  if(S.cfg.vals){
+    // Aufstellungsstärke
+    const ids=Object.values(m),ps=ids.map(P).filter(Boolean);
+    const mv=ps.map(modeVal).filter(x=>x!=null),ov=ps.map(ovr).filter(x=>x!=null);
+    const avg=v=>v.length?v.reduce((x,y)=>x+y,0)/v.length:null;
+    const fl=ps.filter(p=>Object.keys(m).find(k=>m[k]===p.id)!=='TW');
+    const fv=fl.map(p=>fit(p,Object.keys(m).find(k=>m[k]===p.id))).filter(x=>x!=null);
+    h+=`<div class="card"><h2>Stärke dieser Aufstellung</h2>
+      <div class="strow"><span>Ø ${mode==='angriff'?'Angriff':'Abwehr'} (${mv.length}/${ps.length})</span><b>${fmt(avg(mv))}</b></div>
+      <div class="strow"><span>Ø Positionseignung Feld</span><b>${fmt(avg(fv))}</b></div>
+      <div class="strow"><span>Ø Gesamt</span><b>${fmt(avg(ov))}</b></div></div>`;
+    // Positionsvorschlag
+    if(sel&&sel.slot){
+      const lhB=p=>mode==='angriff'&&p.lh&&(sel.slot==='RA'||sel.slot==='RR')?0.5:0;
+      const cand=dabei(a).map(p=>({p,f:fit(p,sel.slot)})).filter(x=>x.f!=null).sort((x,y)=>(y.f+lhB(y.p))-(x.f+lhB(x.p))).slice(0,6);
+      const nm=mode==='angriff'?POS_NAME[sel.slot]:DEF_NAME[sel.slot];
+      h+=`<div class="card"><h2>Vorschlag ${sel.slot} · ${nm}</h2>`+(cand.length?cand.map(x=>{
+        const posOk=mode==='angriff'?(x.p.pos||[]).includes(sel.slot):(sel.slot==='TW'?isTW(x.p):true);
+        const here=m[sel.slot]===x.p.id;
+        return `<div class="sug" data-sug="${x.p.id}"><span class="nrb" style="width:30px;height:30px;font-size:13px">${esc(x.p.nr)}</span><span class="grow">${esc(x.p.name)}${x.p.lh?' <em class="lhs">L</em>':''}${posOk&&mode==='angriff'?' <span class="ok">✓</span>':''}${here?' <span class="muted">(aufgestellt)</span>':''}</span><em class="vb">${fmt(x.f)}</em></div>`;}).join(''):'<div class="muted">Keine Bewertungen für diese Position vorhanden.</div>')+
+        `<div class="muted" style="margin-top:6px">Antippen setzt den Spieler auf ${sel.slot}. ✓ = Position im Kader hinterlegt.${mode==='angriff'&&(sel.slot==='RA'||sel.slot==='RR')?' Linkshänder (L) werden hier bevorzugt.':''}</div></div>`;
+    }
+    // Steckbrief
+    if(sel&&sel.pid){
+      const p=P(sel.pid),e=lastE(p);
+      h+=`<div class="card"><h2>Steckbrief ${esc(lbl(p))}</h2>`+(e?
+        `<svg id="a-mini" viewBox="-130 10 740 370">${radarSVG(MAIN.map(c=>({label:c.s})),[{color:'#ff3347',vals:MAIN.map(c=>catAvg(e,c))}],30)}</svg>`+
+        (isTW(p)&&twVal(p)!=null?`<div class="strow"><span>Torwart</span><b>${fmt(twVal(p))}</b></div>`:'')+
+        `<div class="muted">Stand ${e.datum.split('-').reverse().join('.')}</div>`+(e.notiz?`<div style="margin-top:6px;font-size:14px;white-space:pre-wrap">${esc(e.notiz)}</div>`:'')
+        :'<div class="muted">Noch keine Bewertung.</div>')+'</div>';
+    }
+  }
+  $('#a-side').innerHTML=h;
+}
+$('#a-side').addEventListener('click',e=>{const s=e.target.closest('[data-sug]');if(!s||!sel||!sel.slot)return;assign(s.dataset.sug,sel.slot,null);sel=null;renderAuf();});
+function toggleVals(){S.cfg.vals=!S.cfg.vals;save();render();}
+$('#a-vals').addEventListener('click',toggleVals);
+$('#p-vals').addEventListener('click',toggleVals);
+
+/* ---------- Spiele ---------- */
+const GCRIT=[['ang','Angriff'],['abw','Abwehr'],['eins','Einsatz'],['spv','Spielverständnis'],['tw','Torwartleistung']];
+const APOS=['LA','RL','RM','RR','RA','KM','TW'],DPOS=['VOR','AL','HL','IN','HR','AR'];
+const pkA=k=>k==='TW'?'TW':'A:'+k,pkD=k=>k==='TW'?'TW':'D:'+k;
+const PK_ORDER=[...APOS.map(pkA),...DPOS.map(pkD)];
+const pkLabel=key=>key==='TW'?'TW':key.slice(2)+(key[0]==='D'?' (Abw.)':'');
+const STATS=[['t','Tore'],['w','Würfe'],['f','Techn. Fehler'],['z','2 Min.']];
+let gv='erf',gId=null,gPid=null,gEm='one';
+const GF={von:'',bis:'',ort:'',sel:[],pm:'angriff'};
+const G=()=>S.spiele.find(g=>g.id===gId)||null;
+const gSorted=()=>[...S.spiele].sort((a,b)=>b.datum.localeCompare(a.datum));
+const dShort=d=>d?d.split('-').reverse().join('.'):'';
+const gName=g=>dShort(g.datum)+' '+(g.ort==='A'?'@ ':'vs. ')+(g.gegner||'?')+(g.e1!==''&&g.e2!==''?' ('+g.e1+':'+g.e2+')':'');
+function rec(g,pid){if(!g.sp[pid])g.sp[pid]={k:{},pos:{},st:{t:0,w:0,f:0,z:0},n:''};return g.sp[pid];}
+function gNote(r){if(!r)return null;const v=Object.values(r.k).filter(x=>x);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;}
+function critsFor(p){const tw=isTW(p),only=tw&&(p.pos||[]).length===1;return GCRIT.filter(c=>c[0]==='tw'?tw:!(only&&(c[0]==='ang'||c[0]==='abw')));}
+const avgOf=v=>{v=v.filter(x=>x!=null);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;};
+const nCol=v=>v==null?'var(--muted)':v>=4?'var(--ok)':v>=3?'var(--sel)':'var(--red2)';
+const nColHex=v=>v==null?'#8b919b':v>=4?'#3ecf7a':v>=3?'#ffd166':'#ff3347';
+const gFiltered=()=>S.spiele.filter(g=>(!GF.von||g.datum>=GF.von)&&(!GF.bis||g.datum<=GF.bis)&&(!GF.ort||g.ort===GF.ort)).sort((a,b)=>a.datum.localeCompare(b.datum));
+const scRow=(label,attr,key,v)=>`<div class="scrow"><span class="lb">${label}</span><span class="bt">${[1,2,3,4,5].map(n=>`<button class="sc${v===n?' on':''}" ${attr}="${key}" data-v="${n}">${n}</button>`).join('')}</span></div>`;
+
+document.querySelectorAll('[data-gv]').forEach(b=>b.addEventListener('click',()=>{gv=b.dataset.gv;renderSpiele();}));
+function renderSpiele(){
+  document.querySelectorAll('[data-gv]').forEach(b=>b.classList.toggle('on',b.dataset.gv===gv));
+  $('#gv-body').innerHTML=gv==='erf'?gErf():gv==='eval'?gEval():gPos();
+}
+function gPicker(){
+  const list=gSorted();if(gId&&!G())gId=null;if(!gId&&list.length)gId=list[0].id;
+  return `<label class="f" style="flex:1;min-width:220px">Spiel<select data-g="pick">${list.map(g=>`<option value="${g.id}"${g.id===gId?' selected':''}>${esc(gName(g))}</option>`).join('')||'<option>– noch kein Spiel –</option>'}</select></label>`;
+}
+function gFilterRow(){
+  return `<div class="row"><label class="f">von<input type="date" data-gff="von" value="${GF.von}"></label><label class="f">bis<input type="date" data-gff="bis" value="${GF.bis}"></label>
+    <label class="f">Ort<select data-gff="ort"><option value="">Alle</option><option value="H"${GF.ort==='H'?' selected':''}>Heim</option><option value="A"${GF.ort==='A'?' selected':''}>Auswärts</option></select></label>
+    <span class="muted" style="align-self:center">${gFiltered().length} Spiel(e)</span></div>`;
+}
+
+/* Erfassen */
+function gErf(){
+  let h=`<div class="card"><div class="row">${gPicker()}<button class="btn pri" data-ga="new">+ Neues Spiel</button>${G()?'<button class="btn sm del" data-ga="del">Spiel löschen</button>':''}</div></div>`;
+  const g=G();if(!g)return h+'<div class="card muted">Lege ein Spiel an, um die Spieler zu bewerten.</div>';
+  h+=`<div class="card"><div class="row">
+    <label class="f">Datum<input type="date" data-gf="datum" value="${g.datum}"></label>
+    <label class="f" style="flex:1;min-width:150px">Gegner<input type="text" data-gf="gegner" value="${esc(g.gegner)}"></label>
+    <label class="f">Ort<select data-gf="ort"><option value="H"${g.ort==='H'?' selected':''}>Heim</option><option value="A"${g.ort==='A'?' selected':''}>Auswärts</option></select></label>
+    <label class="f">Ergebnis (MTV : Gegner)<span class="row" style="gap:4px;align-items:center"><input type="number" inputmode="numeric" data-gf="e1" value="${esc(g.e1)}" style="width:68px"> : <input type="number" inputmode="numeric" data-gf="e2" value="${esc(g.e2)}" style="width:68px"></span></label></div>
+    <div class="row" style="margin-top:10px"><label class="f" style="flex:1;min-width:200px">Aufstellung verknüpfen<select data-gf="auf"><option value="">–</option>${S.auf.map(a=>`<option value="${a.id}"${g.auf===a.id?' selected':''}>${esc(a.name)}${a.gegner?' vs. '+esc(a.gegner):''}</option>`).join('')}</select></label>
+    <button class="btn sm" data-ga="fill"${g.auf?'':' disabled'}>Spieler &amp; Positionen übernehmen</button></div></div>`;
+  h+=`<div class="card"><h2>Eingesetzt (${g.teil.length})</h2>${byNr().map(p=>{const on=g.teil.includes(p.id);return `<span class="pchip2" data-gt="${p.id}" style="${on?'border-color:var(--red2)':'opacity:.5'}"><i style="${on?'background:var(--red2)':''}"></i>${esc(lbl(p))}</span>`;}).join('')||'<span class="muted">Kein Kader.</span>'}</div>`;
+  const parts=byNr().filter(p=>g.teil.includes(p.id));
+  if(!parts.length)return h;
+  if(!parts.some(p=>p.id===gPid))gPid=parts[0].id;
+  h+=`<div class="card"><h2>Spieler bewerten</h2>${parts.map(p=>`<span class="dchip${p.id===gPid?' on':''}" data-gsp="${p.id}"><b>${esc(p.nr)}</b>${esc(p.name)} <em class="vb">${fmt(gNote(g.sp[p.id]))}</em></span>`).join('')}</div>`;
+  const p=P(gPid),r=g.sp[gPid]||{k:{},pos:{},st:{t:0,w:0,f:0,z:0},n:''},n=gNote(r);
+  const keys=PK_ORDER.filter(k=>k in r.pos);
+  const pchip=(key,lb)=>`<button class="pchip${key in r.pos?' on':''}" data-gpos="${key}" style="margin:0 5px 5px 0">${lb}</button>`;
+  const idx=parts.findIndex(x=>x.id===gPid);
+  h+=`<div class="card"><div class="cath"><h2>${esc(lbl(p))}${p.lh?' <em class="lhs">L</em>':''}</h2><span class="avg" style="font-size:20px;color:${nCol(n)}">Note ${fmt(n)}</span></div>
+    ${critsFor(p).map(c=>scRow(c[1],'data-gk',c[0],r.k[c[0]])).join('')}
+    <div class="muted" style="margin:14px 0 6px">Eingesetzt auf (optional) · Angriff</div><div>${APOS.map(k=>pchip(pkA(k),k)).join('')}</div>
+    <div class="muted" style="margin:6px 0 6px">Abwehr 1:5</div><div>${DPOS.map(k=>pchip(pkD(k),k)).join('')}</div>
+    ${keys.length?'<div style="margin-top:6px">'+keys.map(k=>scRow('Leistung '+pkLabel(k),'data-gpr',k,r.pos[k]||0)).join('')+'</div>':''}
+    <div class="muted" style="margin:14px 0 6px">Statistik (nur zur Info)</div>
+    <div class="row">${STATS.map(([k,l])=>`<div class="stp"><span>${l}</span><button class="sc" data-gst="${k}" data-d="-1">−</button><b>${r.st[k]||0}</b><button class="sc" data-gst="${k}" data-d="1">+</button></div>`).join('')}</div>
+    <div class="muted" style="margin:14px 0 6px">Notiz zum Spiel</div><textarea data-gf="pnotiz" placeholder="Was lief gut, was nicht …">${esc(r.n||'')}</textarea>
+    <div class="row" style="justify-content:space-between;margin-top:12px"><button class="btn sm" data-gnav="-1"${idx>0?'':' disabled'}>◀ Vorheriger</button><button class="btn sm pri" data-gnav="1"${idx<parts.length-1?'':' disabled'}>Nächster ▶</button></div></div>`;
+  return h;
+}
+function gPrefill(g){
+  const a=S.auf.find(x=>x.id===g.auf);if(!a)return;
+  if(Object.keys(g.sp).length&&!confirm('Eingesetzte Spieler und Positionen aus „'+a.name+'" übernehmen? Bestehende Noten bleiben erhalten.'))return;
+  g.teil=dabei(a).map(p=>p.id);
+  g.teil.forEach(pid=>{
+    const ks=new Set();
+    (a.plan||[]).forEach(b=>{for(const k in b)if(b[k]===pid)ks.add(pkA(k));});
+    for(const k in a.angriff)if(a.angriff[k]===pid)ks.add(pkA(k));
+    for(const k in a.abwehr)if(a.abwehr[k]===pid)ks.add(pkD(k));
+    if(ks.size){const r=rec(g,pid);ks.forEach(k=>{if(!(k in r.pos))r.pos[k]=0;});}
+  });
+  toast('Übernommen');
+}
+
+/* Auswertung */
+function gEval(){
+  let h=`<div class="card"><div class="seg"><button class="btn sm${gEm==='one'?' on':''}" data-gem="one">Einzelspiel</button><button class="btn sm${gEm==='multi'?' on':''}" data-gem="multi">Mehrere Spiele</button></div><div style="margin-top:10px">${gEm==='one'?'<div class="row">'+gPicker()+'</div>':gFilterRow()}</div></div>`;
+  if(gEm==='one'){
+    const g=G();if(!g)return h+'<div class="card muted">Noch keine Spiele erfasst.</div>';
+    const parts=byNr().filter(p=>g.teil.includes(p.id));
+    const row=p=>{const r=g.sp[p.id]||{k:{},pos:{},st:{}},n=gNote(r);
+      return `<tr><td><b>${esc(p.nr)}</b> ${esc(p.name)}</td><td style="font-weight:800;color:${nCol(n)}">${fmt(n)}</td>${GCRIT.map(c=>`<td>${fmt(r.k[c[0]]||null)}</td>`).join('')}
+      <td style="white-space:normal;text-align:left">${PK_ORDER.filter(k=>k in r.pos).map(k=>pkLabel(k)+(r.pos[k]?' '+r.pos[k]:'')).join(', ')||'–'}</td><td>${r.st.t||0}/${r.st.w||0}</td><td>${r.st.f||0}</td><td>${r.st.z||0}</td></tr>`;};
+    const notes=parts.map(p=>gNote(g.sp[p.id]));
+    h+=`<div class="card"><h2>${esc(gName(g))}</h2><div class="tblwrap"><table class="gtbl"><tr><th>Spieler</th><th>Note</th>${GCRIT.map(c=>`<th>${c[1].slice(0,4)}.</th>`).join('')}<th>Positionen</th><th>T/W</th><th>TF</th><th>2'</th></tr>
+      ${parts.map(row).join('')}
+      <tr class="tot"><td>Ø Team</td><td style="color:${nCol(avgOf(notes))}">${fmt(avgOf(notes))}</td>${GCRIT.map(c=>`<td>${fmt(avgOf(parts.map(p=>(g.sp[p.id]||{k:{}}).k[c[0]]||null)))}</td>`).join('')}<td></td>
+      <td>${parts.reduce((s,p)=>s+((g.sp[p.id]||{st:{}}).st.t||0),0)}/${parts.reduce((s,p)=>s+((g.sp[p.id]||{st:{}}).st.w||0),0)}</td><td>${parts.reduce((s,p)=>s+((g.sp[p.id]||{st:{}}).st.f||0),0)}</td><td>${parts.reduce((s,p)=>s+((g.sp[p.id]||{st:{}}).st.z||0),0)}</td></tr></table></div>
+      ${parts.filter(p=>(g.sp[p.id]||{}).n).map(p=>`<div style="margin-top:8px;font-size:14px"><b>${esc(p.name)}:</b> <span style="white-space:pre-wrap">${esc(g.sp[p.id].n)}</span></div>`).join('')}</div>`;
+    return h;
+  }
+  const games=gFiltered();
+  if(!games.length)return h+'<div class="card muted">Keine Spiele im gewählten Zeitraum.</div>';
+  GF.sel=GF.sel.filter(id=>P(id));
+  const agg=byNr().map(p=>{
+    const rs=games.filter(g=>g.teil.includes(p.id)).map(g=>g.sp[p.id]).filter(Boolean);
+    const notes=rs.map(gNote).filter(x=>x!=null);
+    const sum=k=>rs.reduce((s,r)=>s+(r.st[k]||0),0);
+    return {p,einsatz:games.filter(g=>g.teil.includes(p.id)).length,n:notes.length,note:avgOf(notes),crit:GCRIT.map(c=>avgOf(rs.map(r=>r.k[c[0]]||null))),t:sum('t'),w:sum('w'),f:sum('f'),z:sum('z')};
+  }).filter(x=>x.einsatz);
+  const allNotes=agg.map(x=>x.note);
+  h+=`<div class="card"><h2>Ø über ${games.length} Spiel(e)</h2><div class="tblwrap"><table class="gtbl"><tr><th>Spieler</th><th>Spiele</th><th>Ø Note</th>${GCRIT.map(c=>`<th>${c[1].slice(0,4)}.</th>`).join('')}<th>Tore</th><th>Würfe</th><th>Quote</th><th>TF</th><th>2'</th></tr>
+    ${agg.map(x=>{const i=GF.sel.indexOf(x.p.id),c=i>=0?COLORS[i%COLORS.length]:'';
+      return `<tr data-gsel="${x.p.id}"><td style="${c?'color:'+c+';font-weight:800':''}">${c?'● ':''}<b>${esc(x.p.nr)}</b> ${esc(x.p.name)}</td><td>${x.einsatz}${x.n<x.einsatz?' <span class="muted">('+x.n+')</span>':''}</td><td style="font-weight:800;color:${nCol(x.note)}">${fmt(x.note)}</td>${x.crit.map(v=>`<td>${fmt(v)}</td>`).join('')}<td>${x.t}</td><td>${x.w}</td><td>${x.w?Math.round(x.t/x.w*100)+' %':'–'}</td><td>${x.f}</td><td>${x.z}</td></tr>`;}).join('')}
+    <tr class="tot"><td>Ø Team</td><td></td><td style="color:${nCol(avgOf(allNotes))}">${fmt(avgOf(allNotes))}</td>${GCRIT.map((c,i)=>`<td>${fmt(avgOf(agg.map(x=>x.crit[i])))}</td>`).join('')}<td>${agg.reduce((s,x)=>s+x.t,0)}</td><td>${agg.reduce((s,x)=>s+x.w,0)}</td><td></td><td>${agg.reduce((s,x)=>s+x.f,0)}</td><td>${agg.reduce((s,x)=>s+x.z,0)}</td></tr></table></div>
+    <div class="muted" style="margin-top:6px">Zeile antippen = Spieler im Verlauf ein-/ausblenden (bis 6). Spiele in Klammern = davon benotet.</div></div>`;
+  h+=`<div class="card"><h2>Notenverlauf</h2><svg id="gchart" viewBox="0 0 640 290">${gChart(games)}</svg></div>`;
+  return h;
+}
+function gChart(games){
+  const W=640,H=290,l=34,r=18,t=14,b=58,n=games.length;
+  const x=i=>n===1?l+(W-l-r)/2:l+i*(W-l-r)/(n-1),y=v=>t+(5-v)/4*(H-t-b);
+  let g='';
+  for(let v=1;v<=5;v++)g+=`<line x1="${l}" x2="${W-r}" y1="${y(v)}" y2="${y(v)}" stroke="#2b2f37" stroke-width="${v===3?1.5:1}"/><text x="${l-8}" y="${y(v)+4}" text-anchor="end" style="fill:#8b919b;font-size:11px">${v}</text>`;
+  const step=Math.ceil(n/12);
+  games.forEach((gm,i)=>{if(i%step)return;g+=`<text x="${x(i)}" y="${H-b+18}" text-anchor="middle" style="fill:#c9ced6;font-size:10px;font-weight:700">${dShort(gm.datum).slice(0,5)}</text><text x="${x(i)}" y="${H-b+31}" text-anchor="middle" style="fill:#8b919b;font-size:9.5px">${esc((gm.gegner||'').slice(0,10))}</text>`;});
+  const line=(vals,col,dash)=>{let segs=[],cur=[];vals.forEach((v,i)=>{if(v==null){if(cur.length)segs.push(cur);cur=[];}else cur.push([x(i),y(v)]);});if(cur.length)segs.push(cur);
+    let o=segs.map(sg=>`<polyline points="${sg.map(p=>p.join(',')).join(' ')}" fill="none" stroke="${col}" stroke-width="${dash?2:2.5}"${dash?' stroke-dasharray="6 5"':''} stroke-linejoin="round"/>`).join('');
+    if(!dash)vals.forEach((v,i)=>{if(v!=null)o+=`<circle cx="${x(i)}" cy="${y(v)}" r="4" fill="${col}"/>`;});return o;};
+  g+=line(games.map(gm=>avgOf(gm.teil.map(pid=>gNote(gm.sp[pid])))),'#c9ced6',true);
+  GF.sel.forEach((id,i)=>{g+=line(games.map(gm=>gm.teil.includes(id)?gNote(gm.sp[id]):null),COLORS[i%COLORS.length]);});
+  g+=`<g transform="translate(${l} ${H-12})"><line x1="0" x2="18" y1="-4" y2="-4" stroke="#c9ced6" stroke-width="2" stroke-dasharray="5 4"/><text x="24" y="0" style="fill:#8b919b;font-size:11px">Ø Team</text>${GF.sel.map((id,i)=>`<circle cx="${90+i*90}" cy="-4" r="4" fill="${COLORS[i%COLORS.length]}"/><text x="${98+i*90}" y="0" style="fill:#c9ced6;font-size:11px">${esc(short(P(id).name))}</text>`).join('')}</g>`;
+  return g;
+}
+
+/* Positionen / Teamstärke */
+function gPos(){
+  const pm=GF.pm,games=gFiltered();
+  let h=`<div class="card"><div class="seg"><button class="btn sm${pm==='angriff'?' on':''}" data-gpm="angriff">Angriff</button><button class="btn sm${pm==='abwehr'?' on':''}" data-gpm="abwehr">Abwehr 1:5</button></div><div style="margin-top:10px">${gFilterRow()}</div></div>`;
+  const stat={};
+  games.forEach(g=>g.teil.forEach(pid=>{const r=g.sp[pid];if(!r)return;for(const k in r.pos){stat[k]=stat[k]||{};const o=stat[k][pid]=stat[k][pid]||{s:0,n:0,e:0};o.e++;if(r.pos[k]){o.s+=r.pos[k];o.n++;}}}));
+  const slots=SLOTS[pm],key=sl=>pm==='angriff'?pkA(sl.k):pkD(sl.k);
+  const listFor=k=>Object.entries(stat[k]||{}).map(([pid,o])=>({p:P(pid),avg:o.n?o.s/o.n:null,n:o.n,e:o.e})).filter(x=>x.p).sort((a,b)=>(b.avg??-1)-(a.avg??-1)||b.e-a.e);
+  let svg=court(pm==='abwehr');
+  slots.forEach(sl=>{const L=listFor(key(sl)),rated=L.filter(x=>x.avg!=null),best=rated[0],v=best?best.avg:null,c=nColHex(v);
+    svg+=`<g transform="translate(${sl.x} ${sl.y})"><circle r="24" fill="${c}" fill-opacity="${v==null?.06:.22}" stroke="${c}" stroke-width="2.5"${v==null?' stroke-dasharray="4 4"':''}/>
+      <text class="pk" y="-29">${sl.k}</text><text y="6" style="fill:#fff;font-size:16px;font-weight:800">${fmt(v)}</text>
+      <text class="nm" y="40" style="font-size:11px">${rated.length?rated.length+' Spieler':'–'}</text></g>`;});
+  h+=`<div class="card"><svg class="gcourt" viewBox="0 0 400 440">${svg}</svg>
+    <div class="muted" style="text-align:center;margin-top:4px">Kreis = Ø des besten Spielers auf der Position · darunter Anzahl bewerteter Spieler (Kadertiefe)</div></div>`;
+  h+='<div class="bewgrid">'+slots.map(sl=>{const k=key(sl),L=listFor(k),nm=pm==='angriff'?POS_NAME[sl.k]:DEF_NAME[sl.k];
+    const lhPref=pm==='angriff'&&(sl.k==='RA'||sl.k==='RR');
+    return `<div class="card"><div class="cath"><h2>${sl.k} · ${nm}</h2><span class="avg" style="color:${nCol(avgOf(L.map(x=>x.avg)))}">Ø ${fmt(avgOf(L.map(x=>x.avg)))}</span></div>`+
+      (L.length?L.map(x=>`<div class="sug" style="cursor:default"><span class="nrb" style="width:30px;height:30px;font-size:13px">${esc(x.p.nr)}</span><span class="grow">${esc(x.p.name)}${x.p.lh&&lhPref?' <em class="lhs">L</em>':''} <span class="muted">${x.e}× eingesetzt${x.n<x.e?', '+x.n+'× benotet':''}</span></span><em class="vb" style="color:${nCol(x.avg)}">${fmt(x.avg)}</em></div>`).join(''):'<div class="muted">Noch kein Einsatz erfasst.</div>')+'</div>';}).join('')+'</div>';
+  return h;
+}
+
+/* Events Spiele */
+$('#gv-body').addEventListener('click',e=>{
+  const t=e.target.closest('button,[data-gt],[data-gsp],[data-gsel]');if(!t)return;const g=G(),ds=t.dataset;
+  if(ds.ga==='new'){const n={id:uid(),datum:today(),gegner:'',ort:'H',e1:'',e2:'',auf:'',teil:byNr().map(p=>p.id),sp:{}};S.spiele.push(n);gId=n.id;gPid=null;}
+  else if(ds.ga==='del'){if(!g||!confirm('Spiel „'+gName(g)+'" mit allen Noten löschen?'))return;S.spiele=S.spiele.filter(x=>x!==g);gId=null;}
+  else if(ds.ga==='fill'){if(g)gPrefill(g);}
+  else if(ds.gt){if(!g)return;g.teil=g.teil.includes(ds.gt)?g.teil.filter(x=>x!==ds.gt):[...g.teil,ds.gt];}
+  else if(ds.gsp){gPid=ds.gsp;}
+  else if(ds.gk){const r=rec(g,gPid),v=+ds.v;if(r.k[ds.gk]===v)delete r.k[ds.gk];else r.k[ds.gk]=v;}
+  else if(ds.gpos){const r=rec(g,gPid);if(ds.gpos in r.pos)delete r.pos[ds.gpos];else r.pos[ds.gpos]=0;}
+  else if(ds.gpr){const r=rec(g,gPid),v=+ds.v;r.pos[ds.gpr]=r.pos[ds.gpr]===v?0:v;}
+  else if(ds.gst){const r=rec(g,gPid);r.st[ds.gst]=Math.max(0,(r.st[ds.gst]||0)+(+ds.d));}
+  else if(ds.gnav){const parts=byNr().filter(p=>g.teil.includes(p.id)),i=parts.findIndex(p=>p.id===gPid)+(+ds.gnav);if(parts[i])gPid=parts[i].id;window.scrollTo({top:$('#gv-body').offsetTop+300,behavior:'smooth'});}
+  else if(ds.gem){gEm=ds.gem;}
+  else if(ds.gpm){GF.pm=ds.gpm;}
+  else if(ds.gsel){const id=ds.gsel;if(GF.sel.includes(id))GF.sel=GF.sel.filter(x=>x!==id);else{if(GF.sel.length>=6){toast('Maximal 6 Spieler');return;}GF.sel.push(id);}}
+  else return;
+  save();renderSpiele();
+});
+$('#gv-body').addEventListener('input',e=>{
+  const f=e.target.dataset.gf,g=G();if(!f||!g)return;
+  if(f==='gegner'||f==='e1'||f==='e2'){g[f]=e.target.value;save();}
+  else if(f==='pnotiz'){rec(g,gPid).n=e.target.value;save();}
+});
+$('#gv-body').addEventListener('change',e=>{
+  const d=e.target.dataset,g=G();
+  if(d.g==='pick'){gId=e.target.value;gPid=null;}
+  else if(d.gff){GF[d.gff]=e.target.value;}
+  else if(d.gf==='datum'&&g){g.datum=e.target.value||today();}
+  else if((d.gf==='ort'||d.gf==='auf')&&g){g[d.gf]=e.target.value;}
+  else if(d.gf==='gegner'||d.gf==='e1'||d.gf==='e2'){save();return;}
+  else return;
+  save();renderSpiele();
+});
+
+renderKPos();
+/* ---------- Cloud-Start ---------- */
+Cloud.on(st=>{const e=$('#sync');if(!e)return;e.className=st==='saved'?'ok':st==='saving'?'busy':st==='offline'?'off':e.className;
+  e.title={saved:'gespeichert',saving:'speichert …',offline:'offline – wird später synchronisiert'}[st]||'';});
+$('#b-out').addEventListener('click',()=>{if(confirm('Abmelden? Die Daten bleiben in der Cloud gespeichert.')){Cloud.logout();location.href='../';}});
+async function boot(){
+  let d=normalize(await Cloud.load('kader',null));
+  if(!d){const old=normalize(legacy());if(old){d=old;S=d;save();toast('Lokale Daten in die Cloud übernommen');}}
+  if(d)S=d;
+  setTab(S.kader.length?(tab||'auf'):'kader');
+}
+let booted=false;
+Cloud.requireLogin(async()=>{await boot();booted=true;},{title:'Kadertool',back:'../'});
+document.addEventListener('visibilitychange',async()=>{
+  if(document.visibilityState!=='visible'||!booted||!Cloud.user())return;
+  const ae=document.activeElement;if(ae&&/INPUT|TEXTAREA|SELECT/.test(ae.tagName))return;
+  const d=normalize(await Cloud.load('kader',null));if(d){S=d;render();}
+});
+})();
+</script>
+</body>
+</html>
