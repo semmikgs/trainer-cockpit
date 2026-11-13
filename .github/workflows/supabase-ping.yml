@@ -1,0 +1,32 @@
+name: Supabase wach halten
+on:
+  schedule:
+    - cron: '17 6 * * 1,4'   # Mo + Do, 07:17 Uhr (Winterzeit)
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase "Handball"
+        run: |
+          curl -fsS -X POST "$URL/rest/v1/rpc/ping" \
+            -H "apikey: $KEY" -H "Content-Type: application/json" -d '{}'
+        env:
+          URL: https://igirlnoegyhietojxpds.supabase.co
+          KEY: sb_publishable_FqIAHj2wPerBC4Fv3YbqDQ_53_Z-GaY
+
+      # GitHub schaltet Zeitpläne nach 60 Tagen ohne Commit ab –
+      # daher am ersten Montag im Monat ein Mini-Commit.
+      - uses: actions/checkout@v4
+        if: github.event_name == 'schedule'
+      - name: Keepalive-Commit
+        if: github.event_name == 'schedule'
+        run: |
+          if [ "$(date +%u)" = "1" ] && [ "$(date +%d)" -le 7 ]; then
+            date -u +%FT%TZ > .keepalive
+            git config user.name "cockpit-bot"
+            git config user.email "actions@users.noreply.github.com"
+            git add .keepalive && git commit -m "keepalive" && git push
+          fi

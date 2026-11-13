@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>MTV Abrechnung</title>
+<style>
+:root{--red:#c8102e;--red2:#e30613;--ink:#1a1a1a;--muted:#6b6b6b;--line:#e2e2e2;--bg:#f6f6f7;--card:#fff;--pink:#fde6e7;--ok:#1f9d55;--warn:#d97706}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+header{position:sticky;top:0;z-index:5;background:#fff;border-bottom:3px solid var(--red);padding:8px 14px;display:flex;align-items:center;gap:10px}
+header img{height:40px;width:40px;object-fit:cover;border-radius:50%}
+header h1{font-size:16px;margin:0;line-height:1.15;flex:1}
+header h1 small{display:block;color:var(--muted);font-weight:500;font-size:12px}
+.ib{background:none;border:1px solid var(--line);border-radius:10px;padding:7px 10px;font:inherit;font-size:13px;color:var(--ink);cursor:pointer;text-decoration:none}
+#sync{width:10px;height:10px;border-radius:50%;background:#bbb;flex:none}
+#sync.ok{background:var(--ok)}#sync.busy{background:var(--warn)}#sync.off{background:var(--red)}
+main{max-width:860px;margin:0 auto;padding:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.qnav{display:flex;align-items:center;gap:10px}
+.qnav h2{flex:1;text-align:center;margin:0;font-size:19px}
+.qnav button{width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:#fff;font-size:18px;cursor:pointer}
+.meta{text-align:center;color:var(--muted);font-size:13px;margin-top:4px}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700}
+.pill.open{background:#eef6ff;color:#1d4ed8}.pill.closed{background:#e8f6ee;color:var(--ok)}.pill.due{background:var(--pink);color:var(--red)}
+.sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.sum b{display:block;font-size:22px}.sum span{font-size:12px;color:var(--muted)}
+.today{display:flex;align-items:center;gap:10px;border-left:4px solid var(--red)}
+.today .grow{flex:1}
+.btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px 14px;font:inherit;font-weight:600;cursor:pointer;color:var(--ink)}
+.btn.pri{background:var(--red);border-color:var(--red);color:#fff}
+.btn.sm{padding:7px 10px;font-size:13px}
+.btn:disabled{opacity:.45}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.months{display:grid;grid-template-columns:1fr;gap:14px}
+@media(min-width:760px){.months{grid-template-columns:repeat(3,1fr)}}
+.month h3{margin:0 0 6px;font-size:14px;text-align:center}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.grid .wd{font-size:11px;color:var(--muted);text-align:center;font-weight:700}
+.day{aspect-ratio:1;border-radius:9px;border:1px solid transparent;background:#fafafa;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;user-select:none;-webkit-user-select:none;padding:0;font-family:inherit;color:var(--ink)}
+.day.out{visibility:hidden}
+.day.frei{background:repeating-linear-gradient(135deg,#eee 0 4px,#f8f8f8 4px 8px);color:#999}
+.day.t{background:var(--red);color:#fff;font-weight:800}
+.day.t.plan{background:#fff;color:var(--red);border:2px solid var(--red)}
+.day.today{box-shadow:0 0 0 2px #111 inset}
+.day.t.today{box-shadow:0 0 0 2px #111}
+.day.ft::after{content:"";position:absolute;bottom:4px;width:4px;height:4px;border-radius:50%;background:#999}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+table.list{width:100%;border-collapse:collapse}
+.list td,.list th{padding:6px 4px;border-bottom:1px solid var(--line);font-size:14px;text-align:left}
+.list th{font-size:12px;color:var(--muted)}
+.list input{font:inherit;font-size:16px;border:1px solid var(--line);border-radius:8px;padding:5px 6px;background:#fff;width:100%;min-width:0}
+.list input[type=time]{width:96px}
+.list .x{border:0;background:none;color:var(--red);font-size:18px;cursor:pointer;padding:4px 8px}
+.list tr.plan td:first-child{color:var(--muted)}
+.list .an{display:block;font-size:11px;color:var(--muted)}
+@media(max-width:600px){.list .ca{display:none}.list input[type=time]{width:84px;font-size:15px;padding:5px 3px}}
+@media(min-width:601px){.list .an{display:none}}
+.lock{background:var(--pink);border:1px solid #f5b5bc;color:#7a0d1c;border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:14px}
+.muted{color:var(--muted);font-size:13px}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:10px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:50;font-size:14px}
+#toast.show{opacity:1}
+dialog{border:0;border-radius:16px;padding:0;max-width:440px;width:calc(100% - 24px)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog form{padding:18px}
+dialog h3{margin:0 0 12px}
+dialog label{display:block;font-size:12px;color:var(--muted);margin-bottom:10px}
+dialog input{display:block;width:100%;margin-top:3px;font:inherit;font-size:16px;padding:8px 10px;border:1px solid var(--line);border-radius:9px}
+.tage{display:flex;gap:4px;margin-top:4px}
+.tage label{margin:0;display:flex;flex-direction:column;align-items:center;font-size:12px;color:var(--ink)}
+.tage input{width:20px;height:20px;margin:2px 0 0;accent-color:var(--red)}
+#print{display:none}
+
+/* ---------- Druck: Formular-Layout ---------- */
+@page{size:A4;margin:0}
+@media print{
+  body{background:#fff}
+  header,main,#toast,dialog{display:none!important}
+  #print{display:block}
+}
+.pg{width:210mm;height:297mm;padding:11mm 18mm 10mm;position:relative;page-break-after:always;color:#222;font-family:Helvetica,Arial,sans-serif;overflow:hidden}
+.pg:last-child{page-break-after:auto}
+.ph{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1.6px solid var(--red2);padding-bottom:3mm}
+.ph img{height:19mm}
+.ph .t{text-align:right}.ph .t b{display:block;color:var(--red2);font-size:26pt;line-height:1}.ph .t span{color:#6b6b6b;font-size:9pt}
+.pf{display:flex;align-items:flex-end;gap:3mm;margin-top:4.5mm;font-size:9.5pt}
+.pf b{white-space:nowrap}
+.pf .v{flex:1;border-bottom:.6pt solid #b5b5b5;padding:0 1mm 1mm;min-height:5mm;font-size:10pt}
+.ptab{width:100%;border-collapse:collapse;margin-top:5mm;font-size:9.5pt}
+.ptab th{background:var(--red2);color:#fff;font-weight:700;border:.5pt solid #fff;padding:1mm}
+.ptab th.s{font-weight:400;font-size:8.5pt}
+.ptab td{border:.5pt solid #b5b5b5;height:6.1mm;padding:0 2mm;text-align:center}
+.ptab td.a{text-align:left}
+.ptab td.n{font-size:6.5pt;color:#6b6b6b;text-align:left;width:4mm;padding:0 0 0 1mm;border-right:0}
+.ptab tr:nth-child(even) td{background:#f3f3f3}
+.ptab tr.tot td{background:var(--pink)!important;font-weight:700;color:var(--red2);font-size:11pt}
+.pb{display:flex;align-items:center;gap:2mm;margin-top:6mm;font-size:10pt;font-weight:700}
+.pb .l{border-bottom:.6pt solid #b5b5b5;min-width:18mm;text-align:center;font-weight:400}
+.pb .box{margin-left:auto;background:var(--pink);border:1pt solid var(--red2);border-radius:1.5mm;min-width:40mm;padding:1.5mm 2.5mm;text-align:right;font-size:11pt}
+.ps{display:flex;justify-content:space-between;margin-top:6mm;font-size:9.5pt}
+.ps>div{width:75mm}
+.ps .d{display:flex;gap:2mm}.ps .d span{flex:1;border-bottom:.6pt solid #b5b5b5;text-align:center}
+.ps .sig{border-bottom:.7pt solid #222;height:11mm}
+.ps .r{font-size:8.5pt;color:#6b6b6b;margin-top:1mm}
+.pnote{position:absolute;bottom:5mm;left:18mm;right:18mm;font-size:7.5pt;color:#999;display:flex;justify-content:space-between}
+</style>
+</head>
+<body>
+<header>
+  <a href="../"><img src="../logo_mtv_schwarmstedt.jpg" alt="MTV"></a>
+  <h1>Übungsleiter-Abrechnung<small id="who">MTV Schwarmstedt</small></h1>
+  <span id="sync" title="Speicherstatus"></span>
+  <button class="ib" id="b-set">⚙︎</button>
+  <button class="ib" id="b-out">Abmelden</button>
+</header>
+<main id="app"></main>
+<div id="print"></div>
+<div id="toast"></div>
+
+<dialog id="dlg-set"><form method="dialog">
+  <h3>Einstellungen</h3>
+  <label>Name, Vorname<input name="name" autocomplete="name"></label>
+  <label>Sportangebot<input name="angebot"></label>
+  <label>Sportstätte<input name="staette"></label>
+  <label>Anlass (Standard)<input name="anlass"></label>
+  <div class="row" style="gap:10px">
+    <label style="flex:1">Beginn<input name="von" type="time"></label>
+    <label style="flex:1">Ende<input name="bis" type="time"></label>
+    <label style="flex:1">€ pro Std.<input name="satz" inputmode="decimal"></label>
+  </div>
+  <label>Trainingstage<div class="tage" id="set-tage"></div></label>
+  <p class="muted">Änderungen gelten für neue Quartale. Für bestehende: „Standardtermine ergänzen“.</p>
+  <div class="row" style="justify-content:flex-end"><button class="btn" value="cancel">Abbrechen</button><button class="btn pri" value="ok">Speichern</button></div>
+</form></dialog>
+
+<script src="../shared/kalender.js"></script>
+<script src="../shared/cloud.js"></script>
+<script>
+(function(){
+'use strict';
+const DOC='abrechnung';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num=v=>(Math.round(v*100)/100).toFixed(2).replace('.',',');
+const hrs=(a,b)=>{if(!a||!b)return 0;const [h1,m1]=a.split(':').map(Number),[h2,m2]=b.split(':').map(Number);let d=(h2+m2/60)-(h1+m1/60);if(d<0)d+=24;return d;};
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('show'),2000);}
+const DEF_CFG={name:'',angebot:'Handball mJD',staette:'KGS Sporthalle',anlass:'Handball mJD',von:'18:30',bis:'20:00',satz:7.5,tage:[1,3]};
+let D=null,curQ=null;
+
+/* ---------- Quartale ---------- */
+const qOf=s=>{const d=Kal.parse(s);return {y:d.getFullYear(),q:Math.floor(d.getMonth()/3)+1};};
+const qKey=o=>o.y+'-'+o.q;
+const qStart=o=>Kal.iso(new Date(o.y,(o.q-1)*3,1));
+const qEnd=o=>Kal.iso(new Date(o.y,o.q*3,0));
+const qDue=o=>o.q===4?o.y+'-12-03':qEnd(o);
+const qShift=(o,n)=>{let i=o.y*4+(o.q-1)+n;return {y:Math.floor(i/4),q:i%4+1};};
+function defaults(o){
+  const out=[],end=Kal.parse(qEnd(o));
+  for(let d=Kal.parse(qStart(o));d<=end;d.setDate(d.getDate()+1)){
+    const s=Kal.iso(d);
+    if(D.cfg.tage.includes(d.getDay())&&!Kal.frei(s))out.push(mk(s));
+  }
+  return out;
+}
+const mk=s=>({d:s,von:D.cfg.von,bis:D.cfg.bis,anlass:D.cfg.anlass});
+function Q(o){
+  const k=qKey(o);
+  if(!D.q[k]){D.q[k]={status:'offen',termine:defaults(o),exports:[]};save();}
+  return D.q[k];
+}
+const sorted=q=>q.termine.sort((a,b)=>a.d.localeCompare(b.d)||a.von.localeCompare(b.von));
+function save(){Cloud.save(DOC,D);}
+
+/* ---------- Rendern ---------- */
+function render(){
+  const o=curQ,q=Q(o),t=sorted(q),today=Kal.today(),locked=q.status==='abgeschlossen';
+  const std=t.reduce((s,x)=>s+hrs(x.von,x.bis),0),plan=t.filter(x=>x.d>today).length;
+  const due=qDue(o),dleft=Kal.days(today,due);
+  let dueTxt='fällig '+Kal.de(due);
+  if(!locked&&dleft>=0&&dleft<=14)dueTxt+=` · <span class="pill due">in ${dleft} Tag${dleft===1?'':'en'}</span>`;
+  else if(!locked&&dleft<0&&dleft>-60)dueTxt+=` · <span class="pill due">überfällig</span>`;
+  let h=`<div class="card"><div class="qnav"><button data-a="prev">◀</button><h2>${o.q}. Quartal ${o.y}</h2><button data-a="next">▶</button></div>
+    <div class="meta">${Kal.de(qStart(o))} – ${Kal.de(qEnd(o))} · ${dueTxt}</div>
+    <div class="meta"><span class="pill ${locked?'closed':'open'}">${locked?'abgeschlossen '+Kal.de(q.closedAt):'offen'}</span>${q.exports.length?` · PDF zuletzt ${Kal.de(q.exports[q.exports.length-1])}`:''}</div></div>`;
+  if(locked)h+=`<div class="lock">Dieses Quartal ist abgeschlossen. Zum Ändern zuerst <b>„Wieder öffnen“</b>.</div>`;
+  // Heute
+  const isCur=qKey(qOf(today))===qKey(o);
+  if(isCur&&!locked){
+    const tt=t.find(x=>x.d===today),fr=Kal.frei(today);
+    h+=`<div class="card today"><div class="grow"><b>Heute, ${Kal.wd(today)} ${Kal.de(today)}</b><br><span class="muted">${tt?`Training ${tt.von}–${tt.bis} ist eingetragen ✓`:(fr?fr+' – kein Training geplant':'Kein Training eingetragen')}</span></div>
+      ${tt?`<button class="btn sm" data-a="del" data-i="${t.indexOf(tt)}">Fällt aus</button>`:`<button class="btn pri" data-a="addToday">Training heute</button>`}</div>`;
+  }
+  h+=`<div class="card sum"><div><b>${t.length}</b><span>Termine${plan?` (${plan} geplant)`:''}</span></div><div><b>${num(std)}</b><span>Stunden</span></div><div><b>${num(std*D.cfg.satz)} €</b><span>Betrag</span></div></div>`;
+  // Kalender
+  h+='<div class="card"><div class="months">';
+  for(let m=0;m<3;m++){
+    const first=new Date(o.y,(o.q-1)*3+m,1),days=new Date(o.y,(o.q-1)*3+m+1,0).getDate(),off=(first.getDay()+6)%7;
+    h+=`<div class="month"><h3>${first.toLocaleDateString('de-DE',{month:'long'})}</h3><div class="grid">${['Mo','Di','Mi','Do','Fr','Sa','So'].map(w=>`<div class="wd">${w}</div>`).join('')}`;
+    for(let i=0;i<off;i++)h+='<div class="day out"></div>';
+    for(let d=1;d<=days;d++){
+      const s=Kal.iso(new Date(o.y,(o.q-1)*3+m,d)),has=t.some(x=>x.d===s),fr=Kal.frei(s),ft=Kal.feiertag(s);
+      const cls=['day',has?'t':'',has&&s>today?'plan':'',fr&&!has?'frei':'',ft?'ft':'',s===today?'today':''].join(' ');
+      h+=`<button class="${cls}" data-day="${s}" title="${esc(fr||'')}">${d}</button>`;
+    }
+    h+='</div></div>';
+  }
+  h+=`</div><div class="legend"><span><i style="background:var(--red)"></i>Training</span><span><i style="border:2px solid var(--red)"></i>geplant</span><span><i style="background:repeating-linear-gradient(135deg,#ddd 0 3px,#f8f8f8 3px 6px)"></i>Ferien/Feiertag</span></div>
+    <div class="muted" style="margin-top:6px">Tag antippen = Termin hinzufügen / entfernen.</div></div>`;
+  // Liste
+  h+=`<div class="card"><table class="list"><tr><th>Datum</th><th>von</th><th>bis</th><th>Std.</th><th class="ca">Anlass</th><th></th></tr>`+
+    t.map((x,i)=>`<tr class="${x.d>today?'plan':''}"><td>${Kal.wd(x.d)} ${Kal.de(x.d).slice(0,6)}${x.anlass!==D.cfg.anlass?`<span class="an">${esc(x.anlass)}</span>`:''}</td>
+      <td><input type="time" data-i="${i}" data-f="von" value="${x.von}"${locked?' disabled':''}></td>
+      <td><input type="time" data-i="${i}" data-f="bis" value="${x.bis}"${locked?' disabled':''}></td>
+      <td>${num(hrs(x.von,x.bis))}</td>
+      <td class="ca"><input data-i="${i}" data-f="anlass" value="${esc(x.anlass)}"${locked?' disabled':''}></td>
+      <td>${locked?'':`<button class="x" data-a="del" data-i="${i}">✕</button>`}</td></tr>`).join('')+
+    `</table>${t.length>20?`<div class="muted" style="margin-top:6px">${t.length} Termine → das PDF bekommt ${Math.ceil(t.length/20)} Seiten.</div>`:''}</div>`;
+  // Aktionen
+  h+=`<div class="card row">
+    <button class="btn pri" data-a="pdf">PDF / Drucken</button>
+    ${locked?'<button class="btn" data-a="reopen">Wieder öffnen</button>':'<button class="btn" data-a="close">Abschließen &amp; PDF</button>'}
+    ${locked?'':'<button class="btn sm" data-a="fill">Standardtermine ergänzen</button>'}
+  </div>`;
+  $('#app').innerHTML=h;
+}
+
+/* ---------- Aktionen ---------- */
+$('#app').addEventListener('click',e=>{
+  const b=e.target.closest('[data-a],[data-day]');if(!b)return;
+  const q=Q(curQ),locked=q.status==='abgeschlossen',a=b.dataset.a;
+  if(a==='prev'||a==='next'){curQ=qShift(curQ,a==='prev'?-1:1);render();window.scrollTo(0,0);return;}
+  if(a==='pdf'){printPdf(false);return;}
+  if(a==='reopen'){if(!confirm('Quartal wieder öffnen, um Termine zu ergänzen oder zu korrigieren?'))return;q.status='offen';q.reopened=Kal.today();save();render();return;}
+  if(locked){toast('Quartal ist abgeschlossen – erst wieder öffnen');return;}
+  if(b.dataset.day){
+    const s=b.dataset.day,i=q.termine.findIndex(x=>x.d===s);
+    if(i>=0){q.termine.splice(i,1);toast(Kal.de(s)+' entfernt');}
+    else{q.termine.push(mk(s));toast(Kal.de(s)+' eingetragen'+(Kal.frei(s)?' ('+Kal.frei(s)+')':''));}
+  }
+  else if(a==='del'){const x=sorted(q)[+b.dataset.i];q.termine.splice(q.termine.indexOf(x),1);toast(Kal.de(x.d)+' entfernt');}
+  else if(a==='addToday'){q.termine.push(mk(Kal.today()));toast('Heute eingetragen');}
+  else if(a==='fill'){const have=new Set(q.termine.map(x=>x.d));const add=defaults(curQ).filter(x=>!have.has(x.d));
+    if(!add.length){toast('Alle Standardtermine sind schon drin');return;}
+    if(!confirm(add.length+' Standardtermin(e) ergänzen? Entfernte Ausfälle kommen dabei wieder dazu.'))return;q.termine.push(...add);}
+  else if(a==='close'){if(!confirm('Quartal abschließen und PDF erzeugen?'))return;q.status='abgeschlossen';q.closedAt=Kal.today();save();render();printPdf(true);return;}
+  else return;
+  save();render();
+});
+$('#app').addEventListener('change',e=>{
+  const i=e.target.dataset.i,f=e.target.dataset.f;if(i==null||!f)return;
+  const x=sorted(Q(curQ))[+i];x[f]=e.target.value;save();render();
+});
+
+/* ---------- PDF (Druckansicht im Formular-Layout) ---------- */
+function printPdf(){
+  const o=curQ,q=Q(o),t=sorted(q),c=D.cfg,pages=Math.max(1,Math.ceil(t.length/20));
+  const total=t.reduce((s,x)=>s+hrs(x.von,x.bis),0),today=Kal.today();
+  q.exports.push(today);save();
+  let h='';
+  for(let p=0;p<pages;p++){
+    const rows=t.slice(p*20,p*20+20),last=p===pages-1;
+    h+=`<div class="pg"><div class="ph"><img src="../logo_mtv_schwarmstedt.jpg" alt=""><div class="t"><b>Abrechnung</b><span>Männerturnverein von 1909 e.V. Schwarmstedt</span></div></div>
+      <div class="pf"><b>Abrechnungszeitraum</b><b style="margin-left:6mm">vom:</b><span class="v">${Kal.de(qStart(o))}</span><b>bis zum:</b><span class="v">${Kal.de(qEnd(o))}</span></div>
+      <div class="pf"><b>Name, Vorname:</b><span class="v">${esc(c.name)}</span></div>
+      <div class="pf"><b>Sportangebot:</b><span class="v">${esc(c.angebot)}</span><b>Sportstätte:</b><span class="v">${esc(c.staette)}</span></div>
+      <div class="pf"><b>IBAN:</b><span class="v"></span></div>
+      <table class="ptab"><tr><th rowspan="2" colspan="2" style="width:30mm">Datum</th><th colspan="2">Uhrzeit</th><th rowspan="2" style="width:16mm">Std.</th><th rowspan="2">Anlass</th></tr>
+      <tr><th class="s" style="width:19mm">von</th><th class="s" style="width:19mm">bis</th></tr>`;
+    for(let i=0;i<20;i++){const x=rows[i];
+      h+=`<tr><td class="n">${p*20+i+1}</td><td>${x?Kal.de(x.d):''}</td><td>${x?x.von:''}</td><td>${x?x.bis:''}</td><td>${x?num(hrs(x.von,x.bis)):''}</td><td class="a">${x?esc(x.anlass):''}</td></tr>`;}
+    h+=`<tr class="tot"><td colspan="4" style="text-align:left">${last?'Gesamt:':'Übertrag Seite '+(p+1)+':'}</td><td>${last?num(total):num(t.slice(0,p*20+20).reduce((s,x)=>s+hrs(x.von,x.bis),0))}</td><td></td></tr></table>`;
+    if(last){
+      h+=`<div class="pb">Überweisungsbetrag (<span class="l">${num(total)}</span> Std. × <span class="l">${num(c.satz)}</span> € ) =<span class="box">${num(total*c.satz)} €</span></div>
+        <div class="pb" style="margin-top:6mm">Für die Richtigkeit:</div>
+        <div class="ps"><div><div class="d">Schwarmstedt, den <span></span></div><div class="sig"></div><div class="r">Spartenleitung</div></div>
+        <div><div class="d">Schwarmstedt, den <span>${Kal.de(today)}</span></div><div class="sig"></div><div class="r">Trainer/Übungsleiter</div></div></div>`;
+    }
+    h+=`<div class="pnote"><span>${o.q}. Quartal ${o.y} · erstellt ${Kal.de(today)}</span><span>Seite ${p+1}/${pages}</span></div></div>`;
+  }
+  $('#print').innerHTML=h;
+  render();
+  const img=$('#print img');
+  const go=()=>setTimeout(()=>window.print(),150);
+  if(img&&!img.complete){img.onload=go;img.onerror=go;}else go();
+}
+
+/* ---------- Einstellungen ---------- */
+$('#b-set').addEventListener('click',()=>{
+  const f=$('#dlg-set form'),c=D.cfg;
+  ['name','angebot','staette','anlass','von','bis'].forEach(k=>f[k].value=c[k]||'');
+  f.satz.value=String(c.satz).replace('.',',');
+  $('#set-tage').innerHTML=['Mo','Di','Mi','Do','Fr','Sa','So'].map((w,i)=>{const d=(i+1)%7;return `<label>${w}<input type="checkbox" value="${d}"${c.tage.includes(d)?' checked':''}></label>`;}).join('');
+  $('#dlg-set').showModal();
+});
+$('#dlg-set').addEventListener('close',()=>{
+  if($('#dlg-set').returnValue!=='ok')return;
+  const f=$('#dlg-set form'),c=D.cfg;
+  ['name','angebot','staette','anlass','von','bis'].forEach(k=>c[k]=f[k].value.trim());
+  c.satz=parseFloat(f.satz.value.replace(',','.'))||0;
+  c.tage=[...$('#set-tage').querySelectorAll('input:checked')].map(i=>+i.value);
+  save();render();toast('Gespeichert');
+});
+$('#b-out').addEventListener('click',()=>{if(confirm('Abmelden? Die Daten bleiben in der Cloud gespeichert.')){Cloud.logout();location.reload();}});
+
+/* ---------- Sync-Anzeige & Start ---------- */
+Cloud.on(s=>{const e=$('#sync');e.className=s==='saved'?'ok':s==='saving'?'busy':s==='offline'?'off':e.className;
+  e.title={saved:'gespeichert',saving:'speichert …',offline:'offline – wird später synchronisiert'}[s]||'';});
+async function start(user){
+  $('#who').textContent=user?user.email:'Lokaler Testmodus (Cloud nicht eingerichtet)';
+  D=await Cloud.load(DOC,null);
+  if(!D)D={v:1,cfg:{...DEF_CFG},q:{}};
+  D.cfg={...DEF_CFG,...D.cfg};
+  curQ=qOf(Kal.today());
+  render();
+}
+document.addEventListener('visibilitychange',async()=>{ // beim Zurückkehren frische Daten holen
+  if(document.visibilityState==='visible'&&D&&Cloud.user()){const n=await Cloud.load(DOC,null);if(n){D=n;D.cfg={...DEF_CFG,...D.cfg};render();}}
+});
+if(Cloud.configured())Cloud.requireLogin(start,{title:'Abrechnung',back:'../'});
+else start(null);
+})();
+</script>
+</body>
+</html>
