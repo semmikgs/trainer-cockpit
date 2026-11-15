@@ -93,14 +93,16 @@ function requireLogin(onReady,opts){
     #cloud-login button{width:100%;padding:12px;border:0;border-radius:10px;background:#c8102e;color:#fff;font-weight:700;font-size:16px}
     #cloud-login .err{color:#c8102e;font-size:13px;min-height:18px;margin-top:8px}
     #cloud-login a{display:block;text-align:center;margin-top:12px;color:#666;font-size:13px}</style>
-    <form><h2>${opts.title||'Mein Bereich'}</h2><p>Anmelden, um deine Daten auf allen Geräten zu nutzen.</p>
+    <form>${opts.logo?`<img src="${opts.logo}" alt="" style="display:block;height:64px;margin:0 auto 10px">`:''}<h2>${opts.title||'Mein Bereich'}</h2><p>Anmelden, um deine Daten auf allen Geräten zu nutzen.</p>
     <input type="email" name="e" placeholder="E-Mail" autocomplete="username" required>
     <input type="password" name="p" placeholder="Passwort" autocomplete="current-password" required>
     <button type="submit">Anmelden</button><div class="err"></div>${opts.back?`<a href="${opts.back}">← zurück</a>`:''}</form>`;
   document.body.appendChild(ov);
+  const fm=ov.querySelector('form'),last=ls.get('mtv_cloud_email');
+  if(last){fm.e.value=last;setTimeout(()=>fm.p.focus(),50);}
   ov.querySelector('form').addEventListener('submit',async e=>{
     e.preventDefault();const f=e.target,err=ov.querySelector('.err');err.textContent='…';
-    try{await login(f.e.value.trim(),f.p.value);ov.remove();onReady(session.user);}
+    try{await login(f.e.value.trim(),f.p.value);ls.set('mtv_cloud_email',f.e.value.trim());ov.remove();onReady(session.user);}
     catch(x){err.textContent=/invalid/i.test(x.message)?'E-Mail oder Passwort falsch.':x.message;}
   });
 }

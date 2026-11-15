@@ -19,6 +19,7 @@ header h1 small{display:block;font-size:12px;color:var(--muted);font-weight:500}
 .ib{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 12px;font:inherit;font-size:13px;cursor:pointer}
 .ib.pri{background:var(--red);border-color:var(--red);color:#fff;font-weight:700}
 main{max-width:1440px;margin:0 auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+body:not(.auth) main,body:not(.auth) #acc{visibility:hidden}
 .col{display:contents}
 #c-notes{order:1}#c-games{order:2}#c-todo{order:3}#c-tab{order:4}#c-tools{order:5}
 @media(min-width:760px){
@@ -227,13 +228,10 @@ async function loadPrivate(){
 }
 function renderAcc(){
   const u=Cloud.user();
-  $('#acc').innerHTML=u?`<button class="ib" id="b-out" title="${esc(u.email)}">Abmelden</button>`:`<button class="ib pri" id="b-in">Anmelden</button>`;
+  $('#acc').innerHTML=`<button class="ib" id="b-out" title="${esc(u.email)}">Abmelden</button>`;
   if(u)$('#b-out').onclick=()=>{if(confirm('Abmelden?')){Cloud.logout();location.reload();}};
-  else $('#b-in').onclick=()=>Cloud.requireLogin(()=>{renderAcc();loadPrivate();},{title:'Trainer-Cockpit'});
 }
-renderAcc();renderTodo();
-nuliga();
-if(Cloud.user())loadPrivate();
+Cloud.requireLogin(()=>{document.body.classList.add('auth');renderAcc();renderTodo();nuliga();loadPrivate();},{title:'Trainer-Cockpit',logo:'abrechnung/mtv_logo.png'});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Cloud.user())loadPrivate();});
 })();
 </script>
