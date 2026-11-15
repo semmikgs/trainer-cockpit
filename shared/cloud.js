@@ -76,6 +76,16 @@ async function flush(){
 }
 window.addEventListener('online',()=>{if(session)flush();});
 
+/* Passwort ändern: altes Passwort wird zur Sicherheit erst geprüft */
+async function changePassword(oldPw,newPw){
+  if(!session)throw new Error('nicht angemeldet');
+  try{setSession(await authReq('token?grant_type=password',{email:session.user.email,password:oldPw}));}
+  catch(e){throw new Error('Aktuelles Passwort ist falsch.');}
+  const r=await fetch(CFG.url+'/auth/v1/user',{method:'PUT',headers:{'apikey':CFG.key,'Authorization':'Bearer '+session.access_token,'Content-Type':'application/json'},body:JSON.stringify({password:newPw})});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok){const m=j.msg||j.message||j.error_description||('Fehler '+r.status);
+    throw new Error(/different/i.test(m)?'Das neue Passwort muss sich vom alten unterscheiden.':/at least|short|weak/i.test(m)?'Das neue Passwort ist zu kurz oder zu schwach (mind. 6 Zeichen).':/reauth/i.test(m)?'Supabase verlangt eine erneute Bestätigung – in den Auth-Einstellungen „Secure password change“ ausschalten.':m);}
+}
 async function login(email,pw){setSession(await authReq('token?grant_type=password',{email,password:pw}));emit('login');}
 function logout(){session=null;ls.del(LS_SESSION);Object.keys(localStorage).filter(k=>k.startsWith(LS_DOC)).forEach(k=>ls.del(k));emit('logout');}
 
@@ -107,6 +117,6 @@ function requireLogin(onReady,opts){
   });
 }
 
-window.Cloud={load,save,flush,login,logout,requireLogin,
+window.Cloud={load,save,flush,login,logout,requireLogin,changePassword,
   user:()=>session&&session.user,on:f=>listeners.add(f),configured:()=>!/HIER_/.test(CFG.url+CFG.key)};
 })();

@@ -79,6 +79,15 @@ table.tab{width:100%;border-collapse:collapse;font-size:14px}
 .tile .lock{position:absolute;top:8px;right:10px;font-size:11px}
 .tile.soon{opacity:.5;pointer-events:none}
 @media(max-width:759px){.tile{grid-template-columns:1fr;gap:4px}.tile svg{grid-row:auto}}
+dialog{border:0;border-radius:16px;padding:0;max-width:400px;width:calc(100% - 24px)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog form{padding:18px;display:flex;flex-direction:column;gap:8px}
+dialog h3{margin:0}dialog h4{margin:8px 0 0;font-size:14px}
+dialog input{font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:10px}
+dialog .row{display:flex;gap:8px;flex-wrap:wrap}dialog hr{border:0;border-top:1px solid var(--line);width:100%;margin:6px 0}
+.err{color:var(--red);font-size:13px;min-height:16px}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:10px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:50}
+#toast.show{opacity:1}
 </style>
 </head>
 <body>
@@ -121,6 +130,17 @@ table.tab{width:100%;border-collapse:collapse;font-size:14px}
   </div>
 </main>
 
+<dialog id="dlg-acc"><form id="acc-form">
+  <h3>Konto</h3>
+  <p class="muted">Angemeldet als <b id="acc-mail"></b></p>
+  <h4>Passwort ändern</h4>
+  <input type="password" name="old" placeholder="Aktuelles Passwort" autocomplete="current-password" required>
+  <input type="password" name="n1" placeholder="Neues Passwort (mind. 6 Zeichen)" autocomplete="new-password" minlength="6" required>
+  <input type="password" name="n2" placeholder="Neues Passwort wiederholen" autocomplete="new-password" minlength="6" required>
+  <div id="acc-err" class="err"></div>
+  <div class="row"><button type="submit" class="ib pri">Passwort speichern</button><button type="button" class="ib" id="acc-close">Schließen</button></div>
+  <hr><button type="button" class="ib" id="acc-out" style="width:100%">Abmelden</button>
+</form></dialog>
 <script src="shared/kalender.js"></script>
 <script src="shared/cloud.js"></script>
 <script>
@@ -222,14 +242,24 @@ $('#todo').addEventListener('click',e=>{
 });
 
 /* ---------- Konto ---------- */
+$('#acc-close').onclick=()=>$('#dlg-acc').close();
+$('#acc-out').onclick=()=>{if(confirm('Abmelden?')){Cloud.logout();location.reload();}};
+$('#acc-form').addEventListener('submit',async e=>{
+  e.preventDefault();const f=e.target,err=$('#acc-err');
+  if(f.n1.value!==f.n2.value){err.textContent='Die neuen Passwörter stimmen nicht überein.';return;}
+  err.textContent='Speichere …';
+  try{await Cloud.changePassword(f.old.value,f.n1.value);f.reset();err.textContent='';$('#dlg-acc').close();toastMsg('Passwort geändert ✓');}
+  catch(x){err.textContent=x.message;}
+});
+function toastMsg(t){let el=$('#toast');if(!el){el=document.createElement('div');el.id='toast';document.body.appendChild(el);}el.textContent=t;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2200);}
 async function loadPrivate(){
   const [A,T]=await Promise.all([Cloud.load('abrechnung',null),Cloud.load('todo',null)]);
   TODO=T||{items:[]};abrNotes(A);renderTodo();renderNotes();
 }
 function renderAcc(){
   const u=Cloud.user();
-  $('#acc').innerHTML=`<button class="ib" id="b-out" title="${esc(u.email)}">Abmelden</button>`;
-  if(u)$('#b-out').onclick=()=>{if(confirm('Abmelden?')){Cloud.logout();location.reload();}};
+  $('#acc').innerHTML=`<button class="ib" id="b-acc" title="Konto">⚙︎ Konto</button>`;
+  $('#b-acc').onclick=()=>{const d=$('#dlg-acc');$('#acc-mail').textContent=u.email;d.querySelector('form').reset();$('#acc-err').textContent='';d.showModal();};
 }
 Cloud.requireLogin(()=>{document.body.classList.add('auth');renderAcc();renderTodo();nuliga();loadPrivate();},{title:'Trainer-Cockpit',logo:'abrechnung/mtv_logo.png'});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Cloud.user())loadPrivate();});
