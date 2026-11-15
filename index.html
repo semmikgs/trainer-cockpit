@@ -141,8 +141,8 @@ dialog .row{display:flex;gap:8px;flex-wrap:wrap}dialog hr{border:0;border-top:1p
   <div class="row"><button type="submit" class="ib pri">Passwort speichern</button><button type="button" class="ib" id="acc-close">Schließen</button></div>
   <hr><button type="button" class="ib" id="acc-out" style="width:100%">Abmelden</button>
 </form></dialog>
-<script src="shared/kalender.js"></script>
-<script src="shared/cloud.js"></script>
+<script src="shared/kalender.js?v=20261115"></script>
+<script src="shared/cloud.js?v=20261115"></script>
 <script>
 (function(){
 'use strict';
@@ -248,6 +248,7 @@ $('#acc-form').addEventListener('submit',async e=>{
   e.preventDefault();const f=e.target,err=$('#acc-err');
   if(f.n1.value!==f.n2.value){err.textContent='Die neuen Passwörter stimmen nicht überein.';return;}
   err.textContent='Speichere …';
+  if(typeof Cloud.changePassword!=='function'){err.textContent='Alte Version im Browser-Cache – Seite bitte neu laden.';return;}
   try{await Cloud.changePassword(f.old.value,f.n1.value);f.reset();err.textContent='';$('#dlg-acc').close();toastMsg('Passwort geändert ✓');}
   catch(x){err.textContent=x.message;}
 });
