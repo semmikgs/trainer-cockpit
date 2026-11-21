@@ -129,6 +129,9 @@ tr[data-gsel]{cursor:pointer}
 .dchip b{margin-right:2px}
 #sync{width:10px;height:10px;border-radius:50%;background:#555;flex:none}
 #sync.ok{background:var(--ok)}#sync.busy{background:var(--warn)}#sync.off{background:var(--red2)}
+.pchip.fav{background:#3a3010;border-color:var(--sel);color:var(--sel)}
+.tag.fav{background:#3a3010;color:var(--sel)}
+.favrow{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px;font-size:13px;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -158,6 +161,8 @@ tr[data-gsel]{cursor:pointer}
     </div>
     <div class="muted" style="margin:10px 0 6px">Positionen (Mehrfachauswahl)</div>
     <div class="row" id="k-pos"></div>
+    <div id="k-fav"></div>
+    <div id="k-def"></div>
     <label class="tgl" style="margin-top:12px"><input type="checkbox" id="k-lh"> Linkshänder</label>
     <div class="row" style="margin-top:12px">
       <button class="btn pri" id="k-save">Hinzufügen</button>
@@ -166,6 +171,7 @@ tr[data-gsel]{cursor:pointer}
   </div>
   <div class="card">
     <h2>Kader <span id="k-count" class="muted"></span></h2>
+    <label class="tgl" style="margin:-4px 0 8px;font-size:13px;color:var(--muted)"><input type="checkbox" id="k-defon"> Abwehrpositionen (1:5) mit erfassen</label>
     <div id="k-list"></div>
   </div>
 </section>
@@ -196,7 +202,7 @@ tr[data-gsel]{cursor:pointer}
       <div class="card">
         <h2>Bank</h2>
         <div id="bench" data-drop="bench"></div>
-        <div class="muted" style="margin-top:6px">Ziehen oder antippen → Position antippen. <span style="color:var(--warn)">!</span> = ungewohnte Position</div>
+        <div class="muted" style="margin-top:6px">Ziehen oder antippen → Position antippen. <span style="color:var(--sel)">★</span> Lieblingsposition · <span style="color:var(--ok)">✓</span> eigene Position · <span style="color:var(--warn)">!</span> fremde Position</div>
       </div>
       <div id="a-side"></div>
       <div class="card">
@@ -389,30 +395,49 @@ document.querySelectorAll('nav .btn').forEach(b=>b.addEventListener('click',()=>
 function render(){({kader:renderKader,auf:renderAuf,plan:renderPlan,bew:renderBew,spiele:renderSpiele,saved:renderSaved})[tab]();}
 
 /* ---------- Kader ---------- */
-let kEdit=null,kPos=[];
+let kEdit=null,kPos=[],kFav=null,kDpos=[],kDfav=null;
+const DPOS_K=['VOR','AL','HL','IN','HR','AR'];
+const favOf=(list,f)=>list.length===1?list[0]:(f&&list.includes(f)?f:null);
+function favRow(list,cur,attr){
+  if(list.length<2)return '';
+  return `<div class="favrow">Lieblingsposition:${list.map(k=>`<button class="pchip${cur===k?' fav':''}" ${attr}="${k}" style="padding:5px 9px">${k}${cur===k?' ★':''}</button>`).join('')}</div>`;
+}
 function renderKPos(){
   $('#k-pos').innerHTML=POS.map(k=>`<button class="pchip${kPos.includes(k)?' on':''}" data-k="${k}" title="${POS_NAME[k]}">${k}</button>`).join('');
+  const ord=POS.filter(k=>kPos.includes(k));
+  $('#k-fav').innerHTML=favRow(ord,kFav,'data-fav');
+  const on=!!S.cfg.defPos;$('#k-defon').checked=on;
+  const dord=DPOS_K.filter(k=>kDpos.includes(k));
+  $('#k-def').innerHTML=on?`<div class="muted" style="margin:12px 0 6px">Abwehrpositionen 1:5</div><div class="row">${DPOS_K.map(k=>`<button class="pchip${kDpos.includes(k)?' on':''}" data-dk="${k}" title="${DEF_NAME[k]}">${k}</button>`).join('')}</div>${favRow(dord,kDfav,'data-dfav')}`:'';
 }
-$('#k-pos').addEventListener('click',e=>{const b=e.target.closest('[data-k]');if(!b)return;const k=b.dataset.k;kPos=kPos.includes(k)?kPos.filter(x=>x!==k):[...kPos,k];renderKPos();});
-function kReset(){kEdit=null;kPos=[];$('#k-lh').checked=false;$('#k-nr').value='';$('#k-name').value='';$('#k-title').textContent='Spieler hinzufügen';$('#k-save').textContent='Hinzufügen';$('#k-cancel').style.display='none';renderKPos();}
+$('#k-pos').addEventListener('click',e=>{const b=e.target.closest('[data-k]');if(!b)return;const k=b.dataset.k;kPos=kPos.includes(k)?kPos.filter(x=>x!==k):[...kPos,k];if(!kPos.includes(kFav))kFav=null;renderKPos();});
+$('#k-fav').addEventListener('click',e=>{const b=e.target.closest('[data-fav]');if(!b)return;kFav=kFav===b.dataset.fav?null:b.dataset.fav;renderKPos();});
+$('#k-def').addEventListener('click',e=>{
+  const d=e.target.closest('[data-dk]'),f=e.target.closest('[data-dfav]');
+  if(d){const k=d.dataset.dk;kDpos=kDpos.includes(k)?kDpos.filter(x=>x!==k):[...kDpos,k];if(!kDpos.includes(kDfav))kDfav=null;}
+  else if(f){kDfav=kDfav===f.dataset.dfav?null:f.dataset.dfav;}
+  else return;renderKPos();});
+$('#k-defon').addEventListener('change',e=>{S.cfg.defPos=e.target.checked;save();renderKPos();renderKader();});
+function kReset(){kEdit=null;kPos=[];kFav=null;kDpos=[];kDfav=null;$('#k-lh').checked=false;$('#k-nr').value='';$('#k-name').value='';$('#k-title').textContent='Spieler hinzufügen';$('#k-save').textContent='Hinzufügen';$('#k-cancel').style.display='none';renderKPos();}
 $('#k-cancel').addEventListener('click',kReset);
 $('#k-save').addEventListener('click',()=>{
   const name=$('#k-name').value.trim(),nr=$('#k-nr').value.trim(),lh=$('#k-lh').checked;
   if(!name){toast('Bitte Namen eingeben');return;}
   if(nr!==''&&S.kader.some(p=>p.id!==kEdit&&String(p.nr)===nr)){if(!confirm('Nr. '+nr+' ist schon vergeben. Trotzdem speichern?'))return;}
-  const pos=POS.filter(k=>kPos.includes(k));
-  if(kEdit){const p=P(kEdit);Object.assign(p,{name,nr,pos,lh});toast('Gespeichert');}
-  else{S.kader.push({id:uid(),name,nr,pos,lh});toast(name+' hinzugefügt');}
+  const pos=POS.filter(k=>kPos.includes(k)),dpos=DPOS_K.filter(k=>kDpos.includes(k));
+  const fav=pos.length>1&&pos.includes(kFav)?kFav:null,dfav=dpos.length>1&&dpos.includes(kDfav)?kDfav:null;
+  if(kEdit){const p=P(kEdit);Object.assign(p,{name,nr,pos,lh,fav,dpos,dfav});toast('Gespeichert');}
+  else{S.kader.push({id:uid(),name,nr,pos,lh,fav,dpos,dfav});toast(name+' hinzugefügt');}
   save();kReset();renderKader();$('#k-name').focus();
 });
 function renderKader(){
   const list=byNr();
   $('#k-count').textContent='('+list.length+')';
-  $('#k-list').innerHTML=list.length?list.map(p=>`<div class="item"><div class="nrb">${esc(p.nr)}</div><div class="grow"><b>${esc(p.name)}</b>${(p.pos||[]).map(k=>`<span class="tag">${k}</span>`).join('')||'<span class="muted">keine Position</span>'}${p.lh?'<span class="tag" style="background:var(--silver);color:#0d0e11">Linkshänder</span>':''}${(t=>t.length?`<span class="tag" data-wv="${p.id}" title="Verlauf anzeigen" style="cursor:pointer">🤾 ${t.map(w=>kmh(w.v)).join(' · ')} km/h ›</span>`:'')(top3(p.id))}</div><button class="btn sm" data-edit="${p.id}">Bearbeiten</button><button class="btn sm del" data-del="${p.id}">✕</button></div>`).join(''):'<div class="muted">Noch keine Spieler angelegt.</div>';
+  $('#k-list').innerHTML=list.length?list.map(p=>`<div class="item"><div class="nrb">${esc(p.nr)}</div><div class="grow"><b>${esc(p.name)}</b>${(p.pos||[]).map(k=>favOf(p.pos,p.fav)===k&&p.pos.length>1?`<span class="tag fav">${k}★</span>`:`<span class="tag">${k}</span>`).join('')||'<span class="muted">keine Position</span>'}${S.cfg.defPos&&(p.dpos||[]).length?' <span class="muted" style="font-size:11px">Abw.</span>'+p.dpos.map(k=>favOf(p.dpos,p.dfav)===k&&p.dpos.length>1?`<span class="tag fav">${k}★</span>`:`<span class="tag">${k}</span>`).join(''):''}${p.lh?'<span class="tag" style="background:var(--silver);color:#0d0e11">Linkshänder</span>':''}${(t=>t.length?`<span class="tag" data-wv="${p.id}" title="Verlauf anzeigen" style="cursor:pointer">🤾 ${t.map(w=>kmh(w.v)).join(' · ')} km/h ›</span>`:'')(top3(p.id))}</div><button class="btn sm" data-edit="${p.id}">Bearbeiten</button><button class="btn sm del" data-del="${p.id}">✕</button></div>`).join(''):'<div class="muted">Noch keine Spieler angelegt.</div>';
 }
 $('#k-list').addEventListener('click',e=>{
   const ed=e.target.closest('[data-edit]'),dl=e.target.closest('[data-del]');
-  if(ed){const p=P(ed.dataset.edit);kEdit=p.id;kPos=[...(p.pos||[])];$('#k-nr').value=p.nr;$('#k-name').value=p.name;$('#k-lh').checked=!!p.lh;$('#k-title').textContent='Spieler bearbeiten';$('#k-save').textContent='Speichern';$('#k-cancel').style.display='';renderKPos();window.scrollTo({top:0,behavior:'smooth'});}
+  if(ed){const p=P(ed.dataset.edit);kEdit=p.id;kPos=[...(p.pos||[])];kFav=p.fav||null;kDpos=[...(p.dpos||[])];kDfav=p.dfav||null;$('#k-nr').value=p.nr;$('#k-name').value=p.name;$('#k-lh').checked=!!p.lh;$('#k-title').textContent='Spieler bearbeiten';$('#k-save').textContent='Speichern';$('#k-cancel').style.display='';renderKPos();window.scrollTo({top:0,behavior:'smooth'});}
   if(dl){const p=P(dl.dataset.del);if(!confirm(p.name+' aus dem Kader löschen? Er wird auch aus allen Aufstellungen und Bewertungen entfernt.'))return;removePlayer(p.id);S.bew=S.bew.filter(b=>b.sid!==p.id);S.spiele.forEach(g=>{g.teil=g.teil.filter(x=>x!==p.id);delete g.sp[p.id];});S.kader=S.kader.filter(x=>x.id!==p.id);save();renderKader();}
 });
 function removePlayer(id,onlyAuf){
@@ -438,6 +463,20 @@ function court(flip){
   <rect x="170" y="6" width="60" height="14" fill="#0d0e11" stroke="#d0152b" stroke-width="3"/>
   </g>`;
 }
+/* Positionsstatus auf dem Feld: 'fav' (Lieblingsposition), 'own' (eigene Position), 'warn' (fremd) oder null */
+function posStatus(p,k){
+  const pos=p.pos||[];
+  if(mode==='angriff'||k==='TW'){
+    if(!pos.length)return null;
+    if(favOf(pos,p.fav)===k)return 'fav';
+    if(pos.includes(k)||(mode==='angriff'&&p.lh&&(k==='RA'||k==='RR')))return 'own';
+    return 'warn';
+  }
+  const dp=p.dpos||[];
+  if(S.cfg.defPos&&dp.length){if(favOf(dp,p.dfav)===k)return 'fav';return dp.includes(k)?'own':'warn';}
+  return warn(p,k)?'warn':null;
+}
+const posLabel=p=>{const f=favOf(p.pos||[],p.fav);return (p.pos||[]).slice().sort((a,b)=>(b===f)-(a===f)).map(k=>k===f&&p.pos.length>1?k+'★':k).join('/');};
 function warn(p,k){
   if(!p.pos||!p.pos.length)return false;
   if(mode==='angriff')return !p.pos.includes(k)&&!(p.lh&&(k==='RA'||k==='RR'));
@@ -459,15 +498,18 @@ function renderAuf(){
   SLOTS[mode].forEach(s=>{
     const p=m[s.k]&&P(m[s.k]);
     if(p){
-      const isSel=sel&&sel.pid===p.id,w=warn(p,s.k),vb=S.cfg.vals?modeVal(p):null;
+      const isSel=sel&&sel.pid===p.id,st=posStatus(p,s.k),vb=S.cfg.vals?modeVal(p):null;
       svg+=`<g class="tok" data-slot="${s.k}" data-pid="${p.id}" transform="translate(${s.x} ${s.y})">
         <circle r="26" fill="transparent"/>
+        ${st==='fav'?'<circle r="25" fill="none" stroke="#ffd166" stroke-width="3"/>':''}
         <circle r="21" fill="#d0152b" stroke="${isSel?'#ffd166':'#e9ecef'}" stroke-width="${isSel?4:2.5}"/>
         <text class="nr" y="6">${esc(p.nr)}</text>
         ${p.lh?'<g transform="translate(17 14)"><circle r="7.5" fill="#c9ced6" stroke="#0d0e11" stroke-width="1.5"/><text y="3.5" style="fill:#0d0e11;font-size:10px;font-weight:900">L</text></g>':''}
         <text class="pk" y="-26">${s.k}</text>
         <text class="nm" y="37">${esc(short(p.name))}</text>
-        ${w?'<g transform="translate(17 -15)"><circle r="8" fill="#ffb020"/><text class="wx" y="4">!</text></g>':''}
+        ${st==='warn'?'<g transform="translate(17 -15)"><circle r="8" fill="#ffb020"/><text class="wx" y="4">!</text></g>':''}
+        ${st==='own'?'<g transform="translate(17 -15)"><circle r="8" fill="#3ecf7a"/><text class="wx" y="4">✓</text></g>':''}
+        ${st==='fav'?'<g transform="translate(17 -15)"><circle r="8.5" fill="#ffd166"/><text class="wx" y="4" style="font-size:11px">★</text></g>':''}
         ${vb!=null?`<g transform="translate(-21 -17)"><rect x="-14" y="-9" width="28" height="17" rx="5" fill="#2a2410" stroke="#ffd166" stroke-width="1"/><text y="4" style="fill:#ffd166;font-size:11px;font-weight:800">${fmt(vb)}</text></g>`:''}
       </g>`;
     }else{
@@ -479,10 +521,12 @@ function renderAuf(){
   $('#court').innerHTML=svg;
   const placed=Object.values(m);
   const bench=dabei(a).filter(p=>!placed.includes(p.id));
-  $('#bench').innerHTML=bench.length?bench.map(p=>`<div class="chip${sel&&sel.pid===p.id?' sel':''}" data-pid="${p.id}" data-from="bench"><b>${esc(p.nr)}</b>${esc(p.name)}${p.lh?' <em class="lhs">L</em>':''} <small>${(p.pos||[]).join('/')}</small>${S.cfg.vals&&modeVal(p)!=null?' <em class="vb">'+fmt(modeVal(p))+'</em>':''}</div>`).join(''):`<div class="muted">${S.kader.length?'Alle verfügbaren Spieler sind aufgestellt.':'Erst im Reiter „Kader" Spieler anlegen.'}</div>`;
+  $('#bench').innerHTML=bench.length?bench.map(p=>`<div class="chip${sel&&sel.pid===p.id?' sel':''}" data-pid="${p.id}" data-from="bench"><b>${esc(p.nr)}</b>${esc(p.name)}${p.lh?' <em class="lhs">L</em>':''} <small>${posLabel(p)}</small>${S.cfg.vals&&modeVal(p)!=null?' <em class="vb">'+fmt(modeVal(p))+'</em>':''}</div>`).join(''):`<div class="muted">${S.kader.length?'Alle verfügbaren Spieler sind aufgestellt.':'Erst im Reiter „Kader" Spieler anlegen.'}</div>`;
   $('#attend').innerHTML=byNr().map(p=>`<label class="att"><input type="checkbox" data-att="${p.id}"${a.fehlt.includes(p.id)?'':' checked'}> <b>${esc(p.nr)}</b> ${esc(p.name)}</label>`).join('')||'<div class="muted">Kein Kader.</div>';
   const n=Object.keys(m).length,d=dabei(a).length;
-  let h=`${n}/7 Positionen besetzt · ${d} Spieler dabei`;
+  const sts=Object.keys(m).map(k=>{const p=P(m[k]);return p?posStatus(p,k):null;});
+  const cf=sts.filter(x=>x==='fav').length,co=sts.filter(x=>x==='own').length,cw=sts.filter(x=>x==='warn').length;
+  let h=`${n}/7 Positionen besetzt · ${d} Spieler dabei${n?` · <span style="color:var(--sel)">★ ${cf}</span> · <span style="color:var(--ok)">✓ ${co}</span>${cw?` · <span style="color:var(--warn)">! ${cw} fremd</span>`:''}`:''}`;
   if(sel&&sel.pid){const p=P(sel.pid);h=`<b>${esc(lbl(p))}</b> gewählt – Position antippen${sel.slot?' oder „Auf Bank"':''}`;}
   else if(sel&&sel.slot)h=`Position <b>${sel.slot}</b> gewählt – Spieler antippen oder Vorschlag wählen`;
   $('#hint').innerHTML=h;
@@ -803,14 +847,14 @@ function renderSide(a,m){
       <div class="strow"><span>Ø Gesamt</span><b>${fmt(avg(ov))}</b></div></div>`;
     // Positionsvorschlag
     if(sel&&sel.slot){
-      const lhB=p=>mode==='angriff'&&p.lh&&(sel.slot==='RA'||sel.slot==='RR')?0.5:0;
+      const lhB=p=>(mode==='angriff'&&p.lh&&(sel.slot==='RA'||sel.slot==='RR')?0.5:0)+(posStatus(p,sel.slot)==='fav'?0.25:0);
       const cand=dabei(a).map(p=>({p,f:fit(p,sel.slot)})).filter(x=>x.f!=null).sort((x,y)=>(y.f+lhB(y.p))-(x.f+lhB(x.p))).slice(0,6);
       const nm=mode==='angriff'?POS_NAME[sel.slot]:DEF_NAME[sel.slot];
       h+=`<div class="card"><h2>Vorschlag ${sel.slot} · ${nm}</h2>`+(cand.length?cand.map(x=>{
-        const posOk=mode==='angriff'?(x.p.pos||[]).includes(sel.slot):(sel.slot==='TW'?isTW(x.p):true);
+        const ps=posStatus(x.p,sel.slot);
         const here=m[sel.slot]===x.p.id;
-        return `<div class="sug" data-sug="${x.p.id}"><span class="nrb" style="width:30px;height:30px;font-size:13px">${esc(x.p.nr)}</span><span class="grow">${esc(x.p.name)}${x.p.lh?' <em class="lhs">L</em>':''}${posOk&&mode==='angriff'?' <span class="ok">✓</span>':''}${here?' <span class="muted">(aufgestellt)</span>':''}</span><em class="vb">${fmt(x.f)}</em></div>`;}).join(''):'<div class="muted">Keine Bewertungen für diese Position vorhanden.</div>')+
-        `<div class="muted" style="margin-top:6px">Antippen setzt den Spieler auf ${sel.slot}. ✓ = Position im Kader hinterlegt.${mode==='angriff'&&(sel.slot==='RA'||sel.slot==='RR')?' Linkshänder (L) werden hier bevorzugt.':''}</div></div>`;
+        return `<div class="sug" data-sug="${x.p.id}"><span class="nrb" style="width:30px;height:30px;font-size:13px">${esc(x.p.nr)}</span><span class="grow">${esc(x.p.name)}${x.p.lh?' <em class="lhs">L</em>':''}${ps==='fav'?' <span style="color:var(--sel)">★</span>':ps==='own'?' <span class="ok">✓</span>':''}${here?' <span class="muted">(aufgestellt)</span>':''}</span><em class="vb">${fmt(x.f)}</em></div>`;}).join(''):'<div class="muted">Keine Bewertungen für diese Position vorhanden.</div>')+
+        `<div class="muted" style="margin-top:6px">Antippen setzt den Spieler auf ${sel.slot}. ★ = Lieblingsposition, ✓ = Position im Kader hinterlegt.${mode==='angriff'&&(sel.slot==='RA'||sel.slot==='RR')?' Linkshänder (L) werden hier bevorzugt.':''}</div></div>`;
     }
     // Steckbrief
     if(sel&&sel.pid){
@@ -1030,6 +1074,7 @@ async function boot(){
   if(!d){const old=normalize(legacy());if(old){d=old;S=d;save();toast('Lokale Daten in die Cloud übernommen');}}
   if(d)S=d;
   await loadWurf();
+  renderKPos();
   setTab(S.kader.length?(tab||'auf'):'kader');
 }
 let booted=false;
