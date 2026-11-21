@@ -27,7 +27,7 @@ input{-webkit-user-select:text;user-select:text}
 #recent .r span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #recent .r.nn span{opacity:.5;font-style:italic}
 #recent .h{font-size:12px;opacity:.6;text-transform:uppercase;letter-spacing:1px;padding-left:4px}
-#result{position:fixed;left:50%;bottom:5%;transform:translateX(-50%);text-align:center;background:#000d;border-radius:24px;padding:12px 44px;display:none;z-index:4;border:2px solid var(--red)}
+#result{position:fixed;left:50%;bottom:calc(78px + env(safe-area-inset-bottom));transform:translateX(-50%);text-align:center;background:#000d;border-radius:24px;padding:12px 44px;display:none;z-index:4;border:2px solid var(--red)}
 #rWho{font-size:24px;font-weight:600;opacity:.85}
 #big{font-size:min(19vw,160px);font-weight:800;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
 #bigU{font-size:40px;font-weight:600;opacity:.8}
@@ -73,6 +73,18 @@ input{-webkit-user-select:text;user-select:text}
 #start img{height:90px;border-radius:50%}
 #start .go{font-size:28px;padding:18px 40px;border-radius:16px;border:0;background:var(--red);color:#fff;font-weight:700}
 #err{color:#f88;max-width:600px}
+#fbar{position:fixed;left:0;right:0;bottom:0;z-index:3;display:flex;gap:8px;justify-content:center;padding:10px 12px;padding-bottom:max(10px,env(safe-area-inset-bottom));background:linear-gradient(#0000,#000d);overflow-x:auto}
+.fb{display:flex;flex:none;border:1px solid #fff4;border-radius:12px;background:#000a;overflow:hidden}
+.fb button{font:inherit;font-size:16px;color:#fff;background:none;border:0;padding:9px 12px;white-space:nowrap}
+.fb .o{border-left:1px solid #fff4;padding:9px 10px;display:none}
+.fb.on{background:var(--red);border-color:var(--red2)}.fb.on .o{display:block;border-color:#fff6}
+.fb.on button{font-weight:700}
+#pop{position:fixed;left:50%;bottom:calc(70px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:5;background:#16181d;border:1px solid var(--line);border-top:4px solid var(--red);border-radius:16px;padding:14px 16px;min-width:300px;max-width:94vw;display:none}
+#pop h4{margin:0 0 8px;font-size:18px}
+#pop .pr{display:flex;align-items:center;gap:8px;margin:8px 0;flex-wrap:wrap}
+#pop .pr>span{min-width:110px;opacity:.8}
+#pop .chip{font-size:16px;padding:7px 12px}
+#pop .hint{font-size:13px;opacity:.6;margin-top:6px;max-width:420px;line-height:1.4}
 #chPanel{position:fixed;left:12px;top:calc(max(10px,env(safe-area-inset-top)) + 58px);width:270px;z-index:2;background:#000c;border:1px solid #fff3;border-left:4px solid var(--gold);border-radius:12px;padding:10px 12px;display:none;font-size:16px}
 #chPanel h5{margin:0 0 6px;font-size:15px;color:var(--gold)}
 #chPanel .cr{display:flex;justify-content:space-between;gap:8px;padding:3px 0}
@@ -115,6 +127,9 @@ input{-webkit-user-select:text;user-select:text}
 </div>
 
 <div id="recent"></div>
+<div id="fbar"></div>
+<div id="pop"></div>
+<div id="msgToast" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;background:#000d;border:2px solid var(--gold);border-radius:14px;padding:14px 20px;font-size:20px;display:none;max-width:80vw;text-align:center"></div>
 <div id="chPanel"></div>
 
 <div id="result">
@@ -175,7 +190,7 @@ input{-webkit-user-select:text;user-select:text}
   <ul>
     <li>iPad quer, Rückkamera zeigt zu den Stangen, <b>mittig</b> zwischen beiden Stangen und im rechten Winkel zur Wurfbahn.</li>
     <li>Kamera etwa auf Höhe der Wurfbahn (Stativ oder Kasten, ca. 1–1,5 m). Der Ball fliegt <b>direkt über den Stangen</b> – nicht davor oder dahinter.</li>
-    <li>Werfer steht links außerhalb des Bereichs zwischen den Stangen, niemand läuft durchs Bild.</li>
+    <li>Werfer steht links außerhalb des Bereichs zwischen den Stangen, niemand läuft durchs Bild. Mit „🎥 Wurfbewegung“: Werfer so stellen, dass er noch im Kamerabild ist (links neben der linken Stange).</li>
     <li>Ruhiger Hintergrund (Wand, Matte) und gleichmäßiges Hallenlicht machen die Erkennung sicherer.</li>
     <li>In der App mit ✎ die orangen Linien auf die Stangen ziehen und das blaue Band auf die Flughöhe legen.</li>
   </ul>
@@ -184,6 +199,23 @@ input{-webkit-user-select:text;user-select:text}
 
 <div id="panel">
   <h2>Einstellungen</h2>
+  <h4>Aufbau</h4>
+  <label>Abstand der Stangen (m)<input id="iS" type="number" step="0.1" min="0.5"></label>
+  <label>Entfernung iPad → Stangen (m)<input id="iD" type="number" step="0.1" min="0.5"></label>
+  <label>Kamerawinkel horizontal (°)<input id="iF" type="number" step="0.5" min="20" max="120"></label>
+  <div class="hint" id="dminHint"></div>
+  <button class="btn full" id="bGeo">Stangen-Linien aus Maßen setzen</button>
+  <button class="btn full" id="bFov">Kamerawinkel aus Stangen-Linien berechnen</button>
+  <div class="hint">Am genauesten: Mit ✎ die orangen Linien im Livebild auf die Stangen ziehen, dann den zweiten Knopf drücken. Der Kamerawinkel bleibt für spätere Aufbauten gespeichert.</div>
+  <h4>Messung</h4>
+  <label>Anzeigedauer Ergebnis (s)<input id="iH" type="number" step="0.5" min="1"></label>
+  <label>Empfindlichkeit (Schwelle)<input id="iT" type="number" step="1" min="5" max="80"></label>
+  <div class="hint">Kleinere Schwelle = empfindlicher. Wenn ohne Ball schon gemessen wird, höher stellen.</div>
+  <label>Balldurchmesser (cm)<input id="iB" type="number" step="0.5" min="2" max="30"></label>
+  <div class="hint">Handball Größe 1 (D-Jugend): ca. 16 cm, Größe 2 (C-Jugend): ca. 17,5 cm · Tischtennisball: 4 cm (zum Testen).</div>
+  <label>Erkennung anzeigen<input id="iDg" type="checkbox" class="cb"></label>
+  <div class="hint">Rot = Bewegung, grüner Kreis = erkannter Ball, blaue Punkte = letzte Flugbahn. Grund für „ungültig“ steht im Ergebnisfeld.</div>
+  <label>Große Einheit<select id="iU"><option value="kmh">km/h</option><option value="ms">m/s</option></select></label>
   <h4>Aufbau</h4>
   <label>Abstand der Stangen (m)<input id="iS" type="number" step="0.1" min="0.5"></label>
   <label>Entfernung iPad → Stangen (m)<input id="iD" type="number" step="0.1" min="0.5"></label>
@@ -244,7 +276,7 @@ const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const vid=$('vid'), ov=$('ov'), octx=ov.getContext('2d');
 
 /* ---------- Geräte-Einstellungen (lokal) ---------- */
-const DEF={S:5,D:6,fov:60,hold:5,thr:25,unit:'kmh',L:null,R:null,bt:0.25,bb:0.70,ball:17,diag:false,nRecent:5,nTop:5,fWho:false,fRecent:false,fHS:false,fArt:false,fSlow:false,fSlowAuto:false,fVoice:false,fCh:false,hsHold:6,scope:'heute'};
+const DEF={S:5,D:6,fov:60,hold:5,thr:25,unit:'kmh',L:null,R:null,bt:0.25,bb:0.70,ball:17,diag:false,nRecent:5,nTop:5,fWho:false,fRecent:false,fHS:false,fArt:false,fSlow:false,fSlowAuto:false,fVoice:false,fCh:false,fMove:false,hsHold:6,scope:'heute'};
 let cfg=Object.assign({},DEF);
 try{Object.assign(cfg,JSON.parse(localStorage.getItem('mtv_wurf_cfg')||'{}'))}catch(e){}
 function saveCfg(){try{localStorage.setItem('mtv_wurf_cfg',JSON.stringify(cfg))}catch(e){}}
@@ -518,18 +550,22 @@ function say(txt){
 }
 
 /* ---------- Zeitlupe: Ringpuffer der letzten Bilder, nach dem Wurf eingefroren ---------- */
-const RB=90;let ring=[],ringI=0,spare=[],clip=null,clipFor=null,postN=0,replaying=false,rbW=0,rbH=0;
+let RB=90,ringMove=null;let ring=[],ringI=0,spare=[],clip=null,clipFor=null,postN=0,replaying=false,rbW=0,rbH=0;
+const preRoll=()=>cfg.fMove?2.5:0.6;
 function newFrame(){const c=document.createElement('canvas');c.width=rbW;c.height=rbH;return {c,x:c.getContext('2d'),t:-1};}
 function capture(t){
   if(!cfg.fSlow||replaying||edit||!vid.videoWidth)return;
-  if(!ring.length){rbW=Math.min(480,Math.round(vid.videoWidth/2))||360;rbH=Math.round(rbW*vid.videoHeight/vid.videoWidth);for(let i=0;i<RB;i++)ring.push(newFrame());}
+  const want=Math.min(220,Math.ceil(Math.max(30,Math.min(fpsAvg||30,62))*(preRoll()+1.4)));
+  if(!ring.length||want>ring.length*1.25||want<ring.length*0.75||ringMove!==!!cfg.fMove){ringMove=!!cfg.fMove;                                   // Puffer passend zu Vorlauf und Bildrate
+    rbW=cfg.fMove?360:Math.min(480,Math.round(vid.videoWidth/2))||360;rbH=Math.round(rbW*vid.videoHeight/vid.videoWidth);
+    if(postN>0)return;RB=want;ring=[];ringI=0;spare=[];for(let i=0;i<RB;i++)ring.push(newFrame());}
   const f=ring[ringI];f.x.drawImage(vid,0,0,rbW,rbH);f.t=t;ringI=(ringI+1)%RB;
   if(postN>0&&--postN===0)freezeClip();
 }
 function freezeClip(){
   postN=0;if(!ring.length||!lastSamples.length)return;
-  const t0=lastSamples[0].t-1000,frames=[];
-  for(let i=0;i<RB;i++){const j=(ringI+i)%RB,f=ring[j];if(f.t>=t0){frames.push(f);ring[j]=spare.pop()||newFrame();}}
+  const t0=lastSamples[0].t-preRoll()*1000,frames=[];
+  for(let i=0;i<RB;i++){const j=(ringI+i)%RB,f=ring[j];if(f.t>=t0){frames.push(f);const sp=spare.pop();ring[j]=sp&&sp.c.width===rbW?sp:newFrame();}}
   if(clip)spare.push(...clip.frames);
   clip={frames,samples:lastSamples.slice(),wid:clipFor,L:cfg.L,R:cfg.R};
   if(frames.length>2){$('slowBtn').style.display='';if(cfg.fSlowAuto&&state==='show')openReplay();}
@@ -692,9 +728,49 @@ ov.addEventListener('pointermove',e=>{if(!drag)return;const r=vrect(),cl=v=>Math
 ov.addEventListener('pointerup',()=>{if(!drag)return;const band=drag==='bt'||drag==='bb';drag=null;saveCfg();if(band&&pctx)relearn();});
 
 /* ---------- Einstellungen ---------- */
-const fields={iS:'S',iD:'D',iF:'fov',iH:'hold',iT:'thr',iHS:'hsHold',iB:'ball'};
-const sels={iU:'unit',iR:'nRecent',iN:'nTop',iSc:'scope'};
-const feats=['fWho','fRecent','fHS','fArt','fSlow','fSlowAuto','fVoice','fCh'];
+const fields={iS:'S',iD:'D',iF:'fov',iH:'hold',iT:'thr',iB:'ball'};
+const sels={iU:'unit'};
+const FEATS=[
+  {k:'fWho',l:'👤 Namen'},{k:'fRecent',l:'📋 Letzte',o:'recent'},{k:'fHS',l:'🏆 Bestenliste',o:'hs'},
+  {k:'fArt',l:'🤾 Wurfart'},{k:'fSlow',l:'▶ Zeitlupe',o:'slow'},{k:'fMove',l:'🎥 Wurfbewegung',o:'slow'},
+  {k:'fVoice',l:'🔊 Ansage'},{k:'fCh',l:'🎯 Challenge',o:'ch'}];
+function renderBar(){
+  $('fbar').innerHTML=FEATS.map(f=>`<div class="fb${cfg[f.k]?' on':''}"><button data-f="${f.k}">${f.l}</button>${f.o?`<button class="o" data-o="${f.o}">▾</button>`:''}</div>`).join('');
+}
+$('fbar').addEventListener('click',e=>{
+  const o=e.target.closest('[data-o]');if(o){openPop(o.dataset.o);return;}
+  const b=e.target.closest('[data-f]');if(!b)return;const k=b.dataset.f;
+  cfg[k]=!cfg[k];
+  if(k==='fMove'&&cfg.fMove)cfg.fSlow=true;          // Wurfbewegung braucht die Zeitlupe
+  if(k==='fSlow'&&!cfg.fSlow)cfg.fMove=false;
+  if(k==='fVoice'&&cfg.fVoice){unlockVoice();say('Ansage ist an');}
+  saveCfg();closePop();renderBar();applyFeatures();
+  if(k==='fCh'&&cfg.fCh&&!CH)openCH();
+  if(k==='fMove'&&cfg.fMove)toast('Werfer seitlich ins Kamerabild stellen – mind. 1 m links neben der linken Stange');
+});
+function chipRow(label,key,opts,fmtL){return `<div class="pr"><span>${label}</span>${opts.map(v=>`<button class="chip${String(cfg[key])===String(v)?' on':''}" data-pk="${key}" data-pv="${v}">${fmtL?fmtL(v):v}</button>`).join('')}</div>`;}
+let popKind=null;
+function openPop(kind){
+  if(kind==='ch'){closePop();openCH();return;}
+  if(popKind===kind){closePop();return;}
+  popKind=kind;let h='';
+  if(kind==='recent')h='<h4>📋 Letzte Würfe</h4>'+chipRow('Anzahl','nRecent',[3,5,10]);
+  if(kind==='hs')h='<h4>🏆 Bestenliste</h4>'+chipRow('Plätze','nTop',[3,5,10],v=>'Top '+v)+chipRow('Zeitraum','scope',['heute','gesamt'],v=>v==='heute'?'Heute':'Gesamt')+
+    chipRow('Nach dem Wurf','hsHold',[0,4,6,10],v=>v?v+' s':'aus')+'<div class="pr"><button class="btn" id="popHS">Jetzt anzeigen</button></div>'+
+    '<div class="hint">Pro Spieler zählt nur der beste Wurf, gezeigt werden nur die Top-Plätze. Braucht die Anmeldung.</div>';
+  if(kind==='slow')h='<h4>▶ Zeitlupe</h4>'+chipRow('Abspielen','fSlowAuto',[false,true],v=>v?'automatisch':'per Knopf')+
+    chipRow('Vorlauf','fMove',[false,true],v=>v?'mit Wurfbewegung (2,5 s)':'kurz (0,6 s)')+
+    '<div class="hint">Für die Wurfbewegung muss der Werfer seitlich im Kamerabild stehen (mind. 1 m links neben der linken Stange). Bewegungen dort lösen keine Messung aus.</div>';
+  $('pop').innerHTML=h;$('pop').style.display='block';
+}
+function closePop(){popKind=null;$('pop').style.display='none';}
+$('pop').addEventListener('click',e=>{
+  if(e.target.id==='popHS'){closePop();hsCat=catOfNew();showHS(null,0);return;}
+  const c=e.target.closest('[data-pk]');if(!c)return;const k=c.dataset.pk;let v=c.dataset.pv;
+  v=v==='true'?true:v==='false'?false:isNaN(+v)?v:+v;cfg[k]=v;if(k==='fMove'&&v)cfg.fSlow=true;
+  saveCfg();const kind=popKind;popKind=null;openPop(kind);renderBar();renderRecent();if($('hs').style.display==='block')renderHS();
+});
+function toast(t){const e=$('msgToast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',3500);}
 function applyFeatures(){
   $('who').style.display=cfg.fWho?'':'none';$('hsBtn').style.display=cfg.fHS?'':'none';
   $('artBtn').style.display=$('handBtn').style.display=cfg.fArt?'':'none';$('chBtn').style.display=cfg.fCh?'':'none';
@@ -703,9 +779,7 @@ function applyFeatures(){
   if(!cfg.fHS)hideHS();renderRecent();
   if((cfg.fWho||cfg.fHS)&&!Cloud.user())Cloud.requireLogin(()=>loadData(),{title:'Wurfmessung',back:'../',logo:'../logo_mtv_schwarmstedt.jpg'});
 }
-feats.forEach(f=>$(f).addEventListener('change',()=>{cfg[f]=$(f).checked;saveCfg();applyFeatures();
-  if(f==='fVoice'&&cfg.fVoice){unlockVoice();say('Ansage ist an');}}));
-function fillPanel(){feats.forEach(f=>$(f).checked=!!cfg[f]);$('iDg').checked=!!cfg.diag;for(const id in fields)$(id).value=cfg[fields[id]];for(const id in sels)$(id).value=String(cfg[sels[id]]);dminHint();}
+function fillPanel(){$('iDg').checked=!!cfg.diag;for(const id in fields)$(id).value=cfg[fields[id]];for(const id in sels)$(id).value=String(cfg[sels[id]]);dminHint();}
 function dminHint(){const dmin=(cfg.S/2)*1.15/Math.tan(cfg.fov*Math.PI/360);
   $('dminHint').textContent='Damit beide Stangen gut im Bild sind, braucht das iPad bei diesem Kamerawinkel mindestens ca. '+fmt(dmin,1)+' m Entfernung.';}
 for(const id in fields)$(id).addEventListener('change',()=>{const v=parseFloat($(id).value);if(v>=0){cfg[fields[id]]=v;saveCfg();dminHint();}});
@@ -740,8 +814,8 @@ function sketchSVG(){
   <text x="${cx+12}" y="${(py+iy)/2+20}" fill="#8b919b" font-size="13">mind. ${f(dmin)} m</text>
   <rect x="${cx-30}" y="${iy-10}" width="60" height="20" rx="4" fill="#d0152b"/><circle cx="${cx}" cy="${iy-10}" r="4" fill="#fff"/>
   <text x="${cx}" y="${iy+34}" fill="#fff" font-size="16" text-anchor="middle">iPad (quer, Rückkamera zu den Stangen)</text>
-  <g transform="translate(70 ${py+60})"><circle r="11" fill="#5dd39e"/><path d="M-14 40 L0 14 L14 40 M0 14 L0 -4 M0 4 L22 -14" stroke="#5dd39e" stroke-width="5" fill="none" stroke-linecap="round"/></g>
-  <text x="70" y="${py+128}" fill="#5dd39e" font-size="14" text-anchor="middle">Werfer außerhalb</text>
+  <g transform="translate(${cfg.fMove?Math.max(cx-hw-70,cx-fx+40):70} ${py+60})"><circle r="11" fill="#5dd39e"/><path d="M-14 40 L0 14 L14 40 M0 14 L0 -4 M0 4 L22 -14" stroke="#5dd39e" stroke-width="5" fill="none" stroke-linecap="round"/></g>
+  <text x="${cfg.fMove?Math.max(cx-hw-70,cx-fx+40):70}" y="${py+128}" fill="#5dd39e" font-size="14" text-anchor="middle">${cfg.fMove?"Werfer im Bild, links der Stange":"Werfer außerhalb"}</text>
   <text x="890" y="${iy+60}" fill="#8b919b" font-size="12" text-anchor="end">Draufsicht · maßstäblich nach den eingestellten Werten</text>
   </svg>`;
 }
@@ -753,7 +827,7 @@ $('sketch').addEventListener('click',e=>{if(e.target===$('sketch'))$('sketch').c
 setStatus();
 
 /* ---------- Start ---------- */
-loadData();applyFeatures();
+renderBar();loadData();applyFeatures();
 document.addEventListener('visibilitychange',async()=>{
   if(document.visibilityState!=='visible')return;
   if(state==='track')return;await loadData();
