@@ -340,6 +340,11 @@ if(!S.cfg)S.cfg={hz:20,blk:5};
 if(!Array.isArray(S.bew))S.bew=[];
 if(!Array.isArray(S.spiele))S.spiele=[];
 function save(){Cloud.save('kader',S);}
+/* Wurfmessung (Cloud-Dokument "wurf", nur lesen): drei schnellste Würfe je Spieler */
+let WURF=null;
+const top3=pid=>WURF&&Array.isArray(WURF.wuerfe)?WURF.wuerfe.filter(w=>w.pid===pid).sort((a,b)=>b.v-a.v).slice(0,3):[];
+const kmh=v=>(v*3.6).toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1});
+async function loadWurf(){try{WURF=await Cloud.load('wurf',null);}catch(e){WURF=null;}}
 function cur(){let a=S.auf.find(x=>x.id===S.cur);if(!a){if(!S.auf.length)S.auf.push(newAuf('Startaufstellung'));a=S.auf[0];S.cur=a.id;}return a;}
 const P=id=>S.kader.find(p=>p.id===id);
 const byNr=()=>[...S.kader].sort((a,b)=>((a.nr===''||a.nr==null)?999:+a.nr)-((b.nr===''||b.nr==null)?999:+b.nr)||a.name.localeCompare(b.name));
@@ -378,7 +383,7 @@ $('#k-save').addEventListener('click',()=>{
 function renderKader(){
   const list=byNr();
   $('#k-count').textContent='('+list.length+')';
-  $('#k-list').innerHTML=list.length?list.map(p=>`<div class="item"><div class="nrb">${esc(p.nr)}</div><div class="grow"><b>${esc(p.name)}</b>${(p.pos||[]).map(k=>`<span class="tag">${k}</span>`).join('')||'<span class="muted">keine Position</span>'}${p.lh?'<span class="tag" style="background:var(--silver);color:#0d0e11">Linkshänder</span>':''}</div><button class="btn sm" data-edit="${p.id}">Bearbeiten</button><button class="btn sm del" data-del="${p.id}">✕</button></div>`).join(''):'<div class="muted">Noch keine Spieler angelegt.</div>';
+  $('#k-list').innerHTML=list.length?list.map(p=>`<div class="item"><div class="nrb">${esc(p.nr)}</div><div class="grow"><b>${esc(p.name)}</b>${(p.pos||[]).map(k=>`<span class="tag">${k}</span>`).join('')||'<span class="muted">keine Position</span>'}${p.lh?'<span class="tag" style="background:var(--silver);color:#0d0e11">Linkshänder</span>':''}${(t=>t.length?`<span class="tag" title="Schnellste Würfe">🤾 ${t.map(w=>kmh(w.v)).join(' · ')} km/h</span>`:'')(top3(p.id))}</div><button class="btn sm" data-edit="${p.id}">Bearbeiten</button><button class="btn sm del" data-del="${p.id}">✕</button></div>`).join(''):'<div class="muted">Noch keine Spieler angelegt.</div>';
 }
 $('#k-list').addEventListener('click',e=>{
   const ed=e.target.closest('[data-edit]'),dl=e.target.closest('[data-del]');
@@ -789,7 +794,8 @@ function renderSide(a,m){
         `<svg id="a-mini" viewBox="-130 10 740 370">${radarSVG(MAIN.map(c=>({label:c.s})),[{color:'#ff3347',vals:MAIN.map(c=>catAvg(e,c))}],30)}</svg>`+
         (isTW(p)&&twVal(p)!=null?`<div class="strow"><span>Torwart</span><b>${fmt(twVal(p))}</b></div>`:'')+
         `<div class="muted">Stand ${e.datum.split('-').reverse().join('.')}</div>`+(e.notiz?`<div style="margin-top:6px;font-size:14px;white-space:pre-wrap">${esc(e.notiz)}</div>`:'')
-        :'<div class="muted">Noch keine Bewertung.</div>')+'</div>';
+        :'<div class="muted">Noch keine Bewertung.</div>')+
+        (t=>t.length?`<div class="strow"><span>Schnellste Würfe</span><b>${t.map(w=>kmh(w.v)).join(' · ')} km/h</b></div>`:'')(top3(p.id))+'</div>';
     }
   }
   $('#a-side').innerHTML=h;
@@ -998,6 +1004,7 @@ async function boot(){
   let d=normalize(await Cloud.load('kader',null));
   if(!d){const old=normalize(legacy());if(old){d=old;S=d;save();toast('Lokale Daten in die Cloud übernommen');}}
   if(d)S=d;
+  await loadWurf();
   setTab(S.kader.length?(tab||'auf'):'kader');
 }
 let booted=false;
@@ -1005,7 +1012,7 @@ Cloud.requireLogin(async()=>{await boot();booted=true;},{title:'Kadertool',back:
 document.addEventListener('visibilitychange',async()=>{
   if(document.visibilityState!=='visible'||!booted||!Cloud.user())return;
   const ae=document.activeElement;if(ae&&/INPUT|TEXTAREA|SELECT/.test(ae.tagName))return;
-  const d=normalize(await Cloud.load('kader',null));if(d){S=d;render();}
+  const d=normalize(await Cloud.load('kader',null));await loadWurf();if(d){S=d;render();}
 });
 })();
 </script>

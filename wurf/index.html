@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="../logo_mtv_schwarmstedt.jpg">
+<title>Wurfmessung – MTV</title>
+<style>
+:root{--red:#d0152b;--red2:#ff3347;--silver:#c9ced6;--panel:#16181dee;--line:#2b2f37;--muted:#8b919b;--ok:#3ecf7a;--gold:#ffd166}
+html,body{margin:0;height:100%;background:#000;color:#fff;font-family:-apple-system,system-ui,sans-serif;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
+input{-webkit-user-select:text;user-select:text}
+#vid{position:fixed;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+#ov{position:fixed;inset:0;width:100%;height:100%}
+#top{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;gap:10px;padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top));background:linear-gradient(#000d,#0000);font-size:17px;pointer-events:none;z-index:3}
+#status{font-weight:700;padding:6px 12px;border-radius:8px;background:#333;white-space:nowrap}
+#status.ready{background:#1a7f37}#status.track{background:#b8860b}#status.show{background:#1f4fa8}#status.fail{background:#a32}
+#fps{opacity:.6;font-size:14px;white-space:nowrap}
+.btn{pointer-events:auto;font:inherit;font-size:17px;background:#000a;border:1px solid #fff5;color:#fff;border-radius:10px;padding:8px 13px;text-decoration:none;white-space:nowrap}
+.btn.on{background:var(--red);border-color:var(--red2)}
+.btn.pri{background:var(--red);border-color:var(--red2);font-weight:700}
+#who{font-weight:700;border-color:var(--red2);max-width:260px;overflow:hidden;text-overflow:ellipsis}
+.sp{flex:1}
+#recent{position:fixed;right:12px;top:calc(max(10px,env(safe-area-inset-top)) + 58px);width:230px;z-index:2;display:flex;flex-direction:column;gap:5px}
+#recent .r{display:flex;justify-content:space-between;gap:8px;background:#000b;border:1px solid #fff2;border-radius:9px;padding:6px 10px;font-size:16px}
+#recent .r b{font-variant-numeric:tabular-nums;white-space:nowrap}
+#recent .r span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#recent .r.nn span{opacity:.5;font-style:italic}
+#recent .h{font-size:12px;opacity:.6;text-transform:uppercase;letter-spacing:1px;padding-left:4px}
+#result{position:fixed;left:50%;bottom:5%;transform:translateX(-50%);text-align:center;background:#000d;border-radius:24px;padding:12px 44px;display:none;z-index:4;border:2px solid var(--red)}
+#rWho{font-size:24px;font-weight:600;opacity:.85}
+#big{font-size:min(19vw,160px);font-weight:800;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
+#bigU{font-size:40px;font-weight:600;opacity:.8}
+#small{font-size:28px;opacity:.85;margin-top:4px}
+#info{font-size:14px;opacity:.5;margin-top:2px}
+#place{font-size:34px;font-weight:800;color:var(--gold);min-height:0;margin-top:4px}
+#msg{font-size:24px;display:none;padding:6px}
+#hs{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(520px,90vw);background:var(--panel);border:2px solid var(--red);border-radius:20px;padding:18px 22px;z-index:4;display:none}
+#hs h2{margin:0 0 10px;font-size:24px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+#hs .seg{display:flex;gap:6px}#hs .seg button{font-size:14px;padding:6px 10px}
+#hs .row{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;padding:8px 6px;border-bottom:1px solid var(--line);font-size:22px}
+#hs .row .pl{font-weight:800;text-align:center}
+#hs .row b{font-variant-numeric:tabular-nums}
+#hs .row.me{background:#d0152b44;border-radius:10px}
+#hs .row.p1 .pl{color:var(--gold)}#hs .row.p2 .pl{color:var(--silver)}#hs .row.p3 .pl{color:#d79a5b}
+#hs .empty{opacity:.6;padding:10px 0}
+.sheet{position:fixed;inset:0;background:#000a;z-index:8;display:none;align-items:center;justify-content:center}
+.sheet.open{display:flex}
+.sheetIn{background:#16181d;border:1px solid var(--line);border-top:4px solid var(--red);border-radius:18px;padding:18px;width:min(760px,94vw);max-height:86vh;overflow:auto;box-sizing:border-box}
+.sheetIn h3{margin:0 0 10px;font-size:22px}
+.sub{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:14px 0 6px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:inherit;font-size:18px;background:#1f2228;color:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px;display:flex;gap:8px;align-items:center}
+.chip .nr{background:var(--red);border-radius:7px;min-width:26px;padding:1px 5px;text-align:center;font-weight:700;font-size:15px}
+.chip.on{border-color:var(--red2);box-shadow:0 0 0 2px var(--red2)}
+.srow{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.srow input{flex:1;min-width:160px;font-size:18px;padding:10px;border-radius:10px;border:1px solid #555;background:#222;color:#fff}
+.btn.danger{border-color:#a32;color:#ff8a8a}
+#panel{position:fixed;top:0;right:0;bottom:0;width:min(400px,100%);box-sizing:border-box;background:#141414f5;padding:20px;padding-top:max(20px,env(safe-area-inset-top));overflow:auto;transform:translateX(100%);transition:transform .2s;font-size:17px;z-index:7}
+#panel.open{transform:none}
+#panel h2{margin:0 0 12px;font-size:22px}
+#panel h4{margin:18px 0 4px;color:var(--red2);font-size:14px;text-transform:uppercase;letter-spacing:1px}
+#panel label{display:flex;justify-content:space-between;align-items:center;margin:9px 0;gap:10px}
+#panel input,#panel select{font-size:18px;width:110px;padding:6px;border-radius:8px;border:1px solid #555;background:#222;color:#fff}
+#panel .full{display:block;width:100%;margin:8px 0;text-align:center}
+#panel .hint{font-size:14px;opacity:.65;margin:6px 0 12px;line-height:1.4}
+#start{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:#0d0e11;z-index:6;text-align:center;padding:20px}
+#start img{height:90px;border-radius:50%}
+#start .go{font-size:28px;padding:18px 40px;border-radius:16px;border:0;background:var(--red);color:#fff;font-weight:700}
+#err{color:#f88;max-width:600px}
+</style>
+</head>
+<body>
+<video id="vid" playsinline muted autoplay></video>
+<canvas id="ov"></canvas>
+
+<div id="top">
+  <a class="btn" href="../" title="Cockpit">←</a>
+  <span id="status">–</span><span id="fps"></span>
+  <span class="sp"></span>
+  <button class="btn" id="who">👤 Wer wirft?</button>
+  <button class="btn" id="hsBtn">🏆</button>
+  <button class="btn" id="editBtn">✎</button>
+  <button class="btn" id="gearBtn">⚙︎</button>
+</div>
+
+<div id="recent"></div>
+
+<div id="result">
+  <div id="msg"></div>
+  <div id="val">
+    <div id="rWho"></div>
+    <div><span id="big">0,0</span> <span id="bigU">km/h</span></div>
+    <div id="small"></div><div id="place"></div><div id="info"></div>
+  </div>
+</div>
+
+<div id="hs">
+  <h2><span id="hsTitle">Bestenliste</span><span class="seg"><button class="btn" data-sc="heute">Heute</button><button class="btn" data-sc="gesamt">Gesamt</button></span></h2>
+  <div id="hsList"></div>
+</div>
+
+<div class="sheet" id="sheet"><div class="sheetIn">
+  <h3 id="shTitle">Wer wirft?</h3>
+  <div class="sub">Kader</div><div id="shKader" class="chips"></div>
+  <div class="sub" id="shGastH">Gäste</div><div id="shGast" class="chips"></div>
+  <div class="srow"><input id="gName" placeholder="Gast-Name eingeben" maxlength="30"><button class="btn pri" id="gAdd">Übernehmen</button></div>
+  <div class="srow"><button class="btn" id="shNone">Ohne Namen</button><button class="btn danger" id="shDel">Wurf löschen</button><span class="sp"></span><button class="btn" id="shClose">Abbrechen</button></div>
+</div></div>
+
+<div id="panel">
+  <h2>Einstellungen</h2>
+  <h4>Aufbau</h4>
+  <label>Abstand der Stangen (m)<input id="iS" type="number" step="0.1" min="0.5"></label>
+  <label>Entfernung iPad → Stangen (m)<input id="iD" type="number" step="0.1" min="0.5"></label>
+  <label>Kamerawinkel horizontal (°)<input id="iF" type="number" step="0.5" min="20" max="120"></label>
+  <div class="hint" id="dminHint"></div>
+  <button class="btn full" id="bGeo">Stangen-Linien aus Maßen setzen</button>
+  <button class="btn full" id="bFov">Kamerawinkel aus Stangen-Linien berechnen</button>
+  <div class="hint">Am genauesten: Mit ✎ die orangen Linien im Livebild auf die Stangen ziehen, dann den zweiten Knopf drücken. Der Kamerawinkel bleibt für spätere Aufbauten gespeichert.</div>
+  <h4>Messung</h4>
+  <label>Anzeigedauer Ergebnis (s)<input id="iH" type="number" step="0.5" min="1"></label>
+  <label>Empfindlichkeit (Schwelle)<input id="iT" type="number" step="1" min="5" max="80"></label>
+  <div class="hint">Kleinere Schwelle = empfindlicher. Wenn ohne Ball schon gemessen wird, höher stellen.</div>
+  <label>Große Einheit<select id="iU"><option value="kmh">km/h</option><option value="ms">m/s</option></select></label>
+  <h4>Listen</h4>
+  <label>Letzte Würfe<select id="iR"><option value="0">aus</option><option>3</option><option>5</option><option>10</option></select></label>
+  <label>Bestenliste: Top<select id="iN"><option>3</option><option>5</option><option>10</option></select></label>
+  <label>Bestenliste zeigen (s)<input id="iHS" type="number" step="1" min="0"></label>
+  <label>Zeitraum<select id="iSc"><option value="heute">Heute</option><option value="gesamt">Gesamt</option></select></label>
+  <div class="hint">Die Bestenliste zeigt pro Spieler nur den besten Wurf und nur die Top-Plätze. Den eigenen Platz gibt es nur, wenn er in den Top-Plätzen liegt, sonst „Neue Bestleistung“.</div>
+  <button class="btn full" id="bLearn">Hintergrund neu lernen</button>
+  <button class="btn full" id="bClose">Schließen</button>
+</div>
+
+<div id="start">
+  <img src="../logo_mtv_schwarmstedt.jpg" alt="">
+  <div style="font-size:32px;font-weight:700">Wurfgeschwindigkeit messen</div>
+  <div style="opacity:.7;max-width:560px">iPad quer aufstellen, Rückkamera zu den Stangen, mittig zwischen den Stangen. Werfer steht außerhalb des Bereichs zwischen den Stangen.</div>
+  <button class="go" id="startBtn">Kamera starten</button>
+  <div id="err"></div>
+  <a class="btn" href="../">← zurück zum Cockpit</a>
+</div>
+
+<script src="../shared/cloud.js?v=20261115"></script>
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(v,d)=>v.toLocaleString('de-DE',{minimumFractionDigits:d,maximumFractionDigits:d});
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const vid=$('vid'), ov=$('ov'), octx=ov.getContext('2d');
+
+/* ---------- Geräte-Einstellungen (lokal) ---------- */
+const DEF={S:5,D:6,fov:60,hold:4,thr:25,unit:'kmh',L:null,R:null,bt:0.38,bb:0.56,nRecent:5,nTop:5,hsHold:6,scope:'heute'};
+let cfg=Object.assign({},DEF);
+try{Object.assign(cfg,JSON.parse(localStorage.getItem('mtv_wurf_cfg')||'{}'))}catch(e){}
+function saveCfg(){try{localStorage.setItem('mtv_wurf_cfg',JSON.stringify(cfg))}catch(e){}}
+const fnorm=()=>0.5/Math.tan(cfg.fov*Math.PI/360);
+function markersFromGeometry(){const o=fnorm()*(cfg.S/2)/cfg.D;cfg.L=0.5-o;cfg.R=0.5+o;saveCfg();}
+function fovFromMarkers(){const o=Math.abs(cfg.R-cfg.L)/2;const fn=o*cfg.D/(cfg.S/2);cfg.fov=Math.round(2*Math.atan(0.5/fn)*1800/Math.PI)/10;saveCfg();}
+if(cfg.L==null)markersFromGeometry();
+
+/* ---------- Daten: Kader (nur lesen) + Würfe (Cloud-Dokument "wurf") ---------- */
+let K=[];                                   // Spieler aus dem Kadertool
+let W={v:1,wuerfe:[],gaeste:[]};            // wuerfe: {id,pid,name,v(m/s),dt,n,ts}
+let curP=null;                              // {pid,name} oder null
+function normW(d){if(!d||typeof d!=='object')return null;if(!Array.isArray(d.wuerfe))d.wuerfe=[];if(!Array.isArray(d.gaeste))d.gaeste=[];return d;}
+function saveW(){Cloud.save('wurf',W);}
+async function loadData(){
+  const kd=await Cloud.load('kader',null);
+  K=(kd&&Array.isArray(kd.kader))?kd.kader.slice().sort((a,b)=>((a.nr===''||a.nr==null)?999:+a.nr)-((b.nr===''||b.nr==null)?999:+b.nr)||String(a.name).localeCompare(b.name)):[];
+  W=normW(await Cloud.load('wurf',null))||W;
+  try{const c=JSON.parse(localStorage.getItem('mtv_wurf_cur'));if(c)curP=c;}catch(e){}
+  renderWho();renderRecent();
+}
+const nameOf=w=>{if(w.pid){const p=K.find(x=>x.id===w.pid);if(p)return p.name;}return w.name||'';};
+const keyOf=w=>w.pid?'p:'+w.pid:(w.name?'g:'+w.name.trim().toLowerCase():null);
+function dayStart(){const d=new Date();d.setHours(0,0,0,0);return d.getTime();}
+function ranking(scope){
+  const t0=scope==='heute'?dayStart():0, best=new Map();
+  for(const w of W.wuerfe){const k=keyOf(w);if(!k||Date.parse(w.ts)<t0)continue;const b=best.get(k);if(!b||w.v>b.v)best.set(k,w);}
+  return [...best.values()].sort((a,b)=>b.v-a.v);
+}
+const spd=v=>cfg.unit==='kmh'?fmt(v*3.6,1):fmt(v,1);
+const unitTxt=()=>cfg.unit==='kmh'?'km/h':'m/s';
+
+function renderWho(){$('who').textContent='👤 '+(curP?curP.name:'Wer wirft?');try{localStorage.setItem('mtv_wurf_cur',JSON.stringify(curP))}catch(e){}}
+function renderRecent(){
+  const n=+cfg.nRecent;if(!n){$('recent').innerHTML='';return;}
+  const l=W.wuerfe.slice(-n).reverse();
+  $('recent').innerHTML=l.length?'<div class="h">Letzte Würfe · antippen zum Ändern</div>'+l.map(w=>{const nm=nameOf(w);
+    return `<div class="r${nm?'':' nn'}" data-w="${w.id}"><span>${esc(nm||'ohne Namen')}</span><b>${spd(w.v)}</b></div>`;}).join(''):'';
+}
+$('recent').addEventListener('click',e=>{const r=e.target.closest('[data-w]');if(r)openSheet(r.dataset.w);});
+
+/* ---------- Bestenliste ---------- */
+let hsTimer=null, hsMe=null, hsScope=null;
+function showHS(meKey,secs){
+  hsMe=meKey||null;if(!hsScope)hsScope=cfg.scope;renderHS();$('hs').style.display='block';
+  clearTimeout(hsTimer);if(secs)hsTimer=setTimeout(hideHS,secs*1000);
+}
+function hideHS(){clearTimeout(hsTimer);$('hs').style.display='none';hsScope=null;}
+function renderHS(){
+  const sc=hsScope||cfg.scope, N=+cfg.nTop, r=ranking(sc).slice(0,N);
+  $('hsTitle').textContent='Top '+N+' · '+(sc==='heute'?'Heute':'Gesamt');
+  document.querySelectorAll('#hs [data-sc]').forEach(b=>b.classList.toggle('on',b.dataset.sc===sc));
+  $('hsList').innerHTML=r.length?r.map((w,i)=>`<div class="row p${i+1}${keyOf(w)===hsMe?' me':''}"><span class="pl">${i+1}.</span><span>${esc(nameOf(w))}</span><b>${spd(w.v)} ${unitTxt()}</b></div>`).join('')
+    :'<div class="empty">Noch keine Würfe mit Namen.</div>';
+}
+$('hs').addEventListener('click',e=>{const b=e.target.closest('[data-sc]');if(b){hsScope=b.dataset.sc;renderHS();clearTimeout(hsTimer);return;}hideHS();});
+$('hsBtn').addEventListener('click',()=>{if($('hs').style.display==='block')hideHS();else showHS(null,0);});
+
+/* ---------- Werfer wählen / Wurf ändern ---------- */
+let sheetW=null;   // null = Werfer wählen, sonst Wurf-ID
+function openSheet(wid){
+  sheetW=wid||null;const w=sheetW&&W.wuerfe.find(x=>x.id===sheetW);
+  $('shTitle').textContent=w?('Wurf '+spd(w.v)+' '+unitTxt()+' zuordnen'):'Wer wirft?';
+  $('shDel').style.display=w?'':'none';
+  const isOn=(pid,name)=>{const c=w?{pid:w.pid,name:w.name}:curP;return c&&(pid?c.pid===pid:(!c.pid&&c.name===name));};
+  $('shKader').innerHTML=K.length?K.map(p=>`<button class="chip${isOn(p.id)?' on':''}" data-pid="${p.id}"><span class="nr">${esc(p.nr)}</span>${esc(p.name)}</button>`).join('')
+    :'<span style="opacity:.6">Kein Kader gefunden – Spieler im Kadertool anlegen.</span>';
+  $('shGastH').style.display=W.gaeste.length?'':'none';
+  $('shGast').innerHTML=W.gaeste.map(g=>`<button class="chip${isOn(null,g)?' on':''}" data-g="${esc(g)}">${esc(g)}</button>`).join('');
+  $('gName').value='';$('sheet').classList.add('open');
+}
+function choose(pid,name){
+  const sel=pid||name?{pid:pid||null,name:pid?(K.find(p=>p.id===pid)||{}).name:name}:null;
+  if(sheetW){const w=W.wuerfe.find(x=>x.id===sheetW);if(w){w.pid=sel?sel.pid:null;w.name=sel?sel.name:'';saveW();}}
+  else{curP=sel;renderWho();}
+  $('sheet').classList.remove('open');renderRecent();if($('hs').style.display==='block')renderHS();
+}
+$('sheet').addEventListener('click',e=>{
+  const c=e.target.closest('[data-pid]'),g=e.target.closest('[data-g]');
+  if(c)choose(c.dataset.pid,null);else if(g)choose(null,g.dataset.g);else if(e.target===$('sheet'))$('sheet').classList.remove('open');
+});
+$('gAdd').addEventListener('click',()=>{const n=$('gName').value.trim();if(!n)return;if(!W.gaeste.includes(n)){W.gaeste.push(n);saveW();}choose(null,n);});
+$('gName').addEventListener('keydown',e=>{if(e.key==='Enter')$('gAdd').click();});
+$('shNone').addEventListener('click',()=>choose(null,null));
+$('shClose').addEventListener('click',()=>$('sheet').classList.remove('open'));
+$('shDel').addEventListener('click',()=>{if(!confirm('Diesen Wurf löschen?'))return;W.wuerfe=W.wuerfe.filter(x=>x.id!==sheetW);saveW();$('sheet').classList.remove('open');renderRecent();if($('hs').style.display==='block')renderHS();});
+$('who').addEventListener('click',()=>openSheet(null));
+
+/* ---------- Kamera ---------- */
+$('startBtn').addEventListener('click',async()=>{
+  try{
+    const st=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720},frameRate:{ideal:60}}});
+    vid.srcObject=st;await vid.play();
+    $('start').style.display='none';
+    try{await navigator.wakeLock.request('screen')}catch(e){}
+    setupProc();schedule();
+  }catch(e){$('err').textContent='Kamera nicht verfügbar: '+e.message+' (Kamerazugriff in Safari erlauben).';}
+});
+
+/* ---------- Bildverarbeitung ---------- */
+const pc=document.createElement('canvas');let pctx,PW=320,PH=180,bg,cols;
+let state='learn',learnN=0,samples=[],lastSamples=[],miss=0,until=0,quiet=0,blobX=null,lastT=0,fpsAvg=0,pendingHS=null;
+function setupProc(){
+  PW=320;PH=Math.round(PW*vid.videoHeight/vid.videoWidth)||180;
+  pc.width=PW;pc.height=PH;pctx=pc.getContext('2d',{willReadFrequently:true});
+  bg=new Float32Array(PW*PH);cols=new Float32Array(PW);relearn();
+}
+function relearn(){state='learn';learnN=0;samples=[];setStatus();}
+function schedule(){if(vid.requestVideoFrameCallback)vid.requestVideoFrameCallback(onFrame);else requestAnimationFrame(t=>onFrame(t,null));}
+function onFrame(now,meta){
+  let t=now;
+  if(meta){if(meta.captureTime)t=meta.captureTime;else if(meta.mediaTime>0)t=meta.mediaTime*1000;else if(meta.expectedDisplayTime)t=meta.expectedDisplayTime;}
+  if(t>lastT){const dt=t-lastT;if(lastT&&dt<500)fpsAvg=fpsAvg?fpsAvg*0.9+(1000/dt)*0.1:1000/dt;lastT=t;process(t);}
+  draw();schedule();
+}
+function process(t){
+  if(!pctx||!vid.videoWidth)return;
+  const y0=Math.max(0,Math.floor(Math.min(cfg.bt,cfg.bb)*PH)),y1=Math.min(PH,Math.ceil(Math.max(cfg.bt,cfg.bb)*PH)),h=y1-y0;
+  if(h<2)return;
+  pctx.drawImage(vid,0,0,PW,PH);
+  const d=pctx.getImageData(0,y0,PW,h).data;
+  const Lx=Math.min(cfg.L,cfg.R)*PW,Rx=Math.max(cfg.L,cfg.R)*PW,m=0.15*(Rx-Lx);
+  const xa=Math.max(0,Math.floor(Lx-m)),xb=Math.min(PW,Math.ceil(Rx+m));
+  cols.fill(0);let fgTot=0;const learning=state==='learn',thr=cfg.thr;
+  for(let y=0;y<h;y++){
+    for(let x=0;x<PW;x++){
+      const p=(y*PW+x)*4,g=0.299*d[p]+0.587*d[p+1]+0.114*d[p+2],k=(y0+y)*PW+x;
+      if(learning){bg[k]=learnN===0?g:bg[k]+(g-bg[k])*0.2;continue;}
+      if(Math.abs(g-bg[k])>thr){fgTot++;if(x>=xa&&x<xb)cols[x]++;}
+      else bg[k]+=(g-bg[k])*0.03;
+    }
+  }
+  if(learning){if(++learnN>=20){state='ready';setStatus();}return;}
+  if(fgTot>0.35*PW*h){relearn();return;}
+  let best=null,cur=null,gap=0;
+  for(let x=xa;x<=xb;x++){
+    const c=x<xb?cols[x]:0;
+    if(c>0){if(!cur)cur={a:x,b:x,sum:0,sx:0};cur.b=x;cur.sum+=c;cur.sx+=c*x;gap=0;}
+    else if(cur){if(++gap>2||x===xb){if(!best||cur.sum>best.sum)best=cur;cur=null;gap=0;}}
+  }
+  const ballPx=0.19*fnorm()*PW/cfg.D,minPix=Math.max(3,0.25*ballPx*ballPx);
+  const found=best&&best.sum>=minPix&&(best.b-best.a)<=Math.max(8,ballPx*8);
+  blobX=found?best.sx/best.sum:null;
+
+  if(state==='ready'){if(found){state='track';samples=[{t,x:blobX}];miss=0;hideHS();setStatus();}}
+  else if(state==='track'){
+    if(found){samples.push({t,x:blobX});miss=0;}else miss++;
+    if(miss>=3||t-samples[0].t>2000)evaluate();
+  }
+  else if(state==='show'||state==='fail'){
+    if(performance.now()>until){quiet=found?0:quiet+1;
+      if(quiet>=5){const wasShow=state==='show';state='ready';$('result').style.display='none';setStatus();
+        if(wasShow&&+cfg.hsHold>0)showHS(pendingHS,+cfg.hsHold);}}
+  }
+}
+function evaluate(){
+  lastSamples=samples.slice();
+  const Lx=Math.min(cfg.L,cfg.R)*PW,Rx=Math.max(cfg.L,cfg.R)*PW,span=Rx-Lx;
+  const s=samples.filter(p=>p.x>=Lx-0.1*span&&p.x<=Rx+0.1*span);
+  if(s.length<3)return fail('Zu wenige Bilder vom Ball');
+  const xs=s.map(p=>p.x);if(Math.max(...xs)-Math.min(...xs)<0.5*span)return fail('Ball nicht zwischen beiden Stangen erfasst');
+  const n=s.length,mt=s.reduce((a,p)=>a+p.t,0)/n,mx=s.reduce((a,p)=>a+p.x,0)/n;
+  let sxy=0,sxx=0;for(const p of s){sxy+=(p.t-mt)*(p.x-mx);sxx+=(p.t-mt)**2;}
+  if(sxx<=0)return fail('Zeitstempel fehlerhaft');
+  const b=sxy/sxx;if(Math.abs(b)<1e-4)return fail('Keine Bewegung erkannt');
+  let maxRes=0;for(const p of s)maxRes=Math.max(maxRes,Math.abs(p.x-(mx+b*(p.t-mt))));
+  if(maxRes>0.06*span)return fail('Flugbahn unregelmäßig');
+  const dt=span/Math.abs(b)/1000,v=cfg.S/dt,kmh=v*3.6;
+  if(kmh<10||kmh>160)return fail('Unplausibler Wert ('+fmt(kmh,0)+' km/h)');
+  showResult(v,dt,n);
+}
+let last=null;
+function showResult(v,dt,n){
+  const w={id:uid(),pid:curP?curP.pid:null,name:curP?curP.name:'',v:Math.round(v*1000)/1000,dt:Math.round(dt*10000)/10000,n,ts:new Date().toISOString()};
+  // Platz / Bestleistung vor dem Speichern bestimmen
+  const k=keyOf(w);let placeTxt='';pendingHS=null;
+  if(k){
+    const prev=ranking(cfg.scope).find(x=>keyOf(x)===k);
+    W.wuerfe.push(w);
+    if(!prev||w.v>prev.v){
+      const pl=ranking(cfg.scope).findIndex(x=>keyOf(x)===k)+1;
+      placeTxt=pl<=+cfg.nTop?'🏆 Platz '+pl+(cfg.scope==='heute'?' heute!':'!'):'⭐ Neue Bestleistung!';
+    }
+    pendingHS=k;
+  }else W.wuerfe.push(w);
+  saveW();renderRecent();
+  last=w;state='show';until=performance.now()+cfg.hold*1000;quiet=0;
+  $('msg').style.display='none';$('val').style.display='block';$('result').style.display='block';
+  $('place').textContent='';clearTimeout(showResult.t);
+  if(placeTxt)showResult.t=setTimeout(()=>{$('place').textContent=placeTxt;},700);
+  renderVal();setStatus();
+}
+function renderVal(){
+  if(!last)return;
+  const kmh=fmt(last.v*3.6,1),ms=fmt(last.v,1);
+  $('rWho').textContent=nameOf(last)||'';
+  if(cfg.unit==='kmh'){$('big').textContent=kmh;$('bigU').textContent='km/h';$('small').textContent=ms+' m/s';}
+  else{$('big').textContent=ms;$('bigU').textContent='m/s';$('small').textContent=kmh+' km/h';}
+  $('info').textContent='Δt '+fmt(last.dt,3)+' s · '+last.n+' Bilder';
+}
+function fail(txt){
+  state='fail';until=performance.now()+1500;quiet=0;
+  $('val').style.display='none';$('msg').style.display='block';$('msg').textContent='Keine gültige Messung: '+txt;
+  $('result').style.display='block';setStatus();
+}
+$('result').addEventListener('click',()=>{if($('val').style.display==='none')return;cfg.unit=cfg.unit==='kmh'?'ms':'kmh';saveCfg();renderVal();renderRecent();});
+function setStatus(){const el=$('status');el.className=state;
+  el.textContent={learn:'Hintergrund lernen …',ready:'BEREIT',track:'MESSUNG …',show:'ERGEBNIS',fail:'UNGÜLTIG'}[state];}
+
+/* ---------- Overlay / Einrichten ---------- */
+let edit=false,drag=null;
+function vrect(){const W_=innerWidth,H=innerHeight,vw=vid.videoWidth||16,vh=vid.videoHeight||9,s=Math.min(W_/vw,H/vh);return {x:(W_-vw*s)/2,y:(H-vh*s)/2,w:vw*s,h:vh*s};}
+function draw(){
+  const dpr=devicePixelRatio||1,W_=innerWidth,H=innerHeight;
+  if(ov.width!==W_*dpr||ov.height!==H*dpr){ov.width=W_*dpr;ov.height=H*dpr;}
+  octx.setTransform(dpr,0,0,dpr,0,0);octx.clearRect(0,0,W_,H);
+  const r=vrect(),bt=r.y+Math.min(cfg.bt,cfg.bb)*r.h,bb=r.y+Math.max(cfg.bt,cfg.bb)*r.h;
+  octx.fillStyle='rgba(80,200,255,0.12)';octx.fillRect(r.x,bt,r.w,bb-bt);
+  octx.strokeStyle='rgba(80,200,255,0.8)';octx.lineWidth=edit?3:1.5;
+  for(const y of [bt,bb]){octx.beginPath();octx.moveTo(r.x,y);octx.lineTo(r.x+r.w,y);octx.stroke();}
+  octx.strokeStyle='#ff9d1a';octx.lineWidth=edit?4:2;octx.fillStyle='#ff9d1a';octx.font='bold 20px system-ui';
+  for(const k of ['L','R']){const x=r.x+cfg[k]*r.w;octx.beginPath();octx.moveTo(x,r.y);octx.lineTo(x,r.y+r.h);octx.stroke();octx.fillText(k,x+6,r.y+r.h-14);}
+  if(edit){octx.fillStyle='#fff';octx.font='18px system-ui';octx.fillText('Orange Linien auf die Stangen ziehen · blaues Band auf Flughöhe des Balls',r.x+16,r.y+r.h-44);}
+  octx.fillStyle='#4da3ff';
+  for(const p of lastSamples){octx.beginPath();octx.arc(r.x+p.x/PW*r.w,(bt+bb)/2,5,0,7);octx.fill();}
+  if(blobX!=null){octx.strokeStyle='#3f3';octx.lineWidth=3;octx.beginPath();octx.arc(r.x+blobX/PW*r.w,(bt+bb)/2,14,0,7);octx.stroke();}
+  $('fps').textContent=fpsAvg?Math.round(fpsAvg)+' B/s':'';
+}
+$('editBtn').addEventListener('click',()=>{edit=!edit;$('editBtn').classList.toggle('on',edit);});
+ov.addEventListener('pointerdown',e=>{
+  if(!edit)return;const r=vrect();
+  const c=[['L',Math.abs(e.clientX-(r.x+cfg.L*r.w))],['R',Math.abs(e.clientX-(r.x+cfg.R*r.w))],
+           ['bt',Math.abs(e.clientY-(r.y+cfg.bt*r.h))],['bb',Math.abs(e.clientY-(r.y+cfg.bb*r.h))]].sort((a,b)=>a[1]-b[1]);
+  if(c[0][1]<45){drag=c[0][0];ov.setPointerCapture(e.pointerId);}
+});
+ov.addEventListener('pointermove',e=>{if(!drag)return;const r=vrect(),cl=v=>Math.min(1,Math.max(0,v));
+  if(drag==='L'||drag==='R')cfg[drag]=cl((e.clientX-r.x)/r.w);else cfg[drag]=cl((e.clientY-r.y)/r.h);});
+ov.addEventListener('pointerup',()=>{if(!drag)return;const band=drag==='bt'||drag==='bb';drag=null;saveCfg();if(band&&pctx)relearn();});
+
+/* ---------- Einstellungen ---------- */
+const fields={iS:'S',iD:'D',iF:'fov',iH:'hold',iT:'thr',iHS:'hsHold'};
+const sels={iU:'unit',iR:'nRecent',iN:'nTop',iSc:'scope'};
+function fillPanel(){for(const id in fields)$(id).value=cfg[fields[id]];for(const id in sels)$(id).value=String(cfg[sels[id]]);dminHint();}
+function dminHint(){const dmin=(cfg.S/2)*1.15/Math.tan(cfg.fov*Math.PI/360);
+  $('dminHint').textContent='Damit beide Stangen gut im Bild sind, braucht das iPad bei diesem Kamerawinkel mindestens ca. '+fmt(dmin,1)+' m Entfernung.';}
+for(const id in fields)$(id).addEventListener('change',()=>{const v=parseFloat($(id).value);if(v>=0){cfg[fields[id]]=v;saveCfg();dminHint();}});
+for(const id in sels)$(id).addEventListener('change',()=>{cfg[sels[id]]=$(id).value;saveCfg();renderVal();renderRecent();if($('hs').style.display==='block')renderHS();});
+$('gearBtn').addEventListener('click',()=>{fillPanel();$('panel').classList.add('open');});
+$('bClose').addEventListener('click',()=>$('panel').classList.remove('open'));
+$('bGeo').addEventListener('click',()=>markersFromGeometry());
+$('bFov').addEventListener('click',()=>{fovFromMarkers();fillPanel();});
+$('bLearn').addEventListener('click',()=>{if(pctx)relearn();});
+setStatus();
+
+/* ---------- Start ---------- */
+Cloud.requireLogin(()=>{loadData();},{title:'Wurfmessung',back:'../',logo:'../logo_mtv_schwarmstedt.jpg'});
+document.addEventListener('visibilitychange',async()=>{
+  if(document.visibilityState!=='visible'||!Cloud.user())return;
+  if(state==='track')return;await loadData();
+});
+})();
+</script>
+</body>
+</html>

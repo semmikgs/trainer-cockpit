@@ -13,6 +13,7 @@ Persönlicher Bereich für die mJD: Landing Page mit nuLiga-Infos, Erinnerungen,
 | `/` | Cockpit |
 | `abrechnung/` | Übungsleiter-Abrechnung, PDF-Export füllt `abrechnung/vorlage.pdf` (Original-Formular) |
 | `kader/` | Kadertool: Kader, Aufstellung, Wechselplan, Bewertung, Spielnoten (Cloud-Dokument `kader`) |
+| `wurf/` | Wurfmessung per iPad-Kamera: Werfer aus dem Kader, letzte Würfe, Bestenliste (Cloud-Dokument `wurf`, Top 3 je Spieler erscheinen im Kadertool) |
 | `shared/cloud.js` | Login + Cloud-Speicher (mit Offline-Kopie) |
 | `shared/kalender.js` | Ferien & Feiertage Niedersachsen (bis Sommer 2028 – danach ergänzen) |
 | `.github/workflows/supabase-ping.yml` | hält das Free-Projekt aktiv |
