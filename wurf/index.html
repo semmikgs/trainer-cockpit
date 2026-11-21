@@ -55,6 +55,11 @@ input{-webkit-user-select:text;user-select:text}
 .chip.on{border-color:var(--red2);box-shadow:0 0 0 2px var(--red2)}
 .srow{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
 .srow input{flex:1;min-width:160px;font-size:18px;padding:10px;border-radius:10px;border:1px solid #555;background:#222;color:#fff}
+.cb{width:28px!important;height:28px}
+#sketch .sheetIn{width:min(900px,96vw)}
+#sketch svg{width:100%;height:auto;background:#0d0e11;border-radius:12px}
+#sketch ul{margin:10px 0 0;padding-left:20px;line-height:1.5;font-size:16px}
+@media print{body *{visibility:hidden}#sketch,#sketch *{visibility:visible}#sketch{position:absolute;inset:0;background:#fff}#sketch .noprint{display:none}#sketch .sheetIn{background:#fff;color:#000;border:0;max-height:none;width:100%}}
 .btn.danger{border-color:#a32;color:#ff8a8a}
 #panel{position:fixed;top:0;right:0;bottom:0;width:min(400px,100%);box-sizing:border-box;background:#141414f5;padding:20px;padding-top:max(20px,env(safe-area-inset-top));overflow:auto;transform:translateX(100%);transition:transform .2s;font-size:17px;z-index:7}
 #panel.open{transform:none}
@@ -108,6 +113,19 @@ input{-webkit-user-select:text;user-select:text}
   <div class="srow"><button class="btn" id="shNone">Ohne Namen</button><button class="btn danger" id="shDel">Wurf löschen</button><span class="sp"></span><button class="btn" id="shClose">Abbrechen</button></div>
 </div></div>
 
+<div class="sheet" id="sketch"><div class="sheetIn">
+  <h3>Aufbau der Wurfmessung</h3>
+  <div id="skSvg"></div>
+  <ul>
+    <li>iPad quer, Rückkamera zeigt zu den Stangen, <b>mittig</b> zwischen beiden Stangen und im rechten Winkel zur Wurfbahn.</li>
+    <li>Kamera etwa auf Höhe der Wurfbahn (Stativ oder Kasten, ca. 1–1,5 m). Der Ball fliegt <b>direkt über den Stangen</b> – nicht davor oder dahinter.</li>
+    <li>Werfer steht links außerhalb des Bereichs zwischen den Stangen, niemand läuft durchs Bild.</li>
+    <li>Ruhiger Hintergrund (Wand, Matte) und gleichmäßiges Hallenlicht machen die Erkennung sicherer.</li>
+    <li>In der App mit ✎ die orangen Linien auf die Stangen ziehen und das blaue Band auf die Flughöhe legen.</li>
+  </ul>
+  <div class="srow noprint"><span class="sp"></span><button class="btn" id="skPrint">Drucken / PDF</button><button class="btn pri" id="skClose">Schließen</button></div>
+</div></div>
+
 <div id="panel">
   <h2>Einstellungen</h2>
   <h4>Aufbau</h4>
@@ -124,15 +142,22 @@ input{-webkit-user-select:text;user-select:text}
   <div class="hint">Kleinere Schwelle = empfindlicher. Wenn ohne Ball schon gemessen wird, höher stellen.</div>
   <label>Balldurchmesser (cm)<input id="iB" type="number" step="0.5" min="2" max="30"></label>
   <div class="hint">Handball Größe 1 (D-Jugend): ca. 16 cm, Größe 2 (C-Jugend): ca. 17,5 cm · Tischtennisball: 4 cm (zum Testen).</div>
-  <label>Erkennung anzeigen<input id="iDg" type="checkbox" style="width:28px;height:28px"></label>
+  <label>Erkennung anzeigen<input id="iDg" type="checkbox" class="cb"></label>
   <div class="hint">Rot = Bewegung, grüner Kreis = erkannter Ball, blaue Punkte = letzte Flugbahn. Grund für „ungültig“ steht im Ergebnisfeld.</div>
   <label>Große Einheit<select id="iU"><option value="kmh">km/h</option><option value="ms">m/s</option></select></label>
-  <h4>Listen</h4>
-  <label>Letzte Würfe<select id="iR"><option value="0">aus</option><option>3</option><option>5</option><option>10</option></select></label>
+  <h4>Zusatzfunktionen</h4>
+  <div class="hint">Ohne Häkchen: nur messen und Geschwindigkeit anzeigen.</div>
+  <label>👤 Wer wirft? (Namen)<input id="fWho" type="checkbox" class="cb"></label>
+  <label>Letzte Würfe anzeigen<input id="fRecent" type="checkbox" class="cb"></label>
+  <label>&nbsp;&nbsp;Anzahl<select id="iR"><option>3</option><option>5</option><option>10</option></select></label>
+  <label>🏆 Bestenliste &amp; Platz<input id="fHS" type="checkbox" class="cb"></label>
+  <div class="hint">Namen und Bestenliste brauchen die Anmeldung (Kader &amp; Speicherung in der Cloud).</div>
   <label>Bestenliste: Top<select id="iN"><option>3</option><option>5</option><option>10</option></select></label>
   <label>Bestenliste zeigen (s)<input id="iHS" type="number" step="1" min="0"></label>
   <label>Zeitraum<select id="iSc"><option value="heute">Heute</option><option value="gesamt">Gesamt</option></select></label>
   <div class="hint">Die Bestenliste zeigt pro Spieler nur den besten Wurf und nur die Top-Plätze. Den eigenen Platz gibt es nur, wenn er in den Top-Plätzen liegt, sonst „Neue Bestleistung“.</div>
+  <h4>Aufbau</h4>
+  <button class="btn full" id="bSketch">📐 Aufbau-Skizze anzeigen</button>
   <button class="btn full" id="bLearn">Hintergrund neu lernen</button>
   <button class="btn full" id="bClose">Schließen</button>
 </div>
@@ -142,6 +167,7 @@ input{-webkit-user-select:text;user-select:text}
   <div style="font-size:32px;font-weight:700">Wurfgeschwindigkeit messen</div>
   <div style="opacity:.7;max-width:560px">iPad quer aufstellen, Rückkamera zu den Stangen, mittig zwischen den Stangen. Werfer steht außerhalb des Bereichs zwischen den Stangen.</div>
   <button class="go" id="startBtn">Kamera starten</button>
+  <button class="btn" id="startSketch">📐 So wird aufgebaut</button>
   <div id="err"></div>
   <a class="btn" href="../">← zurück zum Cockpit</a>
 </div>
@@ -157,7 +183,7 @@ const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const vid=$('vid'), ov=$('ov'), octx=ov.getContext('2d');
 
 /* ---------- Geräte-Einstellungen (lokal) ---------- */
-const DEF={S:5,D:6,fov:60,hold:4,thr:25,unit:'kmh',L:null,R:null,bt:0.25,bb:0.70,ball:17,diag:false,nRecent:5,nTop:5,hsHold:6,scope:'heute'};
+const DEF={S:5,D:6,fov:60,hold:5,thr:25,unit:'kmh',L:null,R:null,bt:0.25,bb:0.70,ball:17,diag:false,nRecent:5,nTop:5,fWho:false,fRecent:false,fHS:false,hsHold:6,scope:'heute'};
 let cfg=Object.assign({},DEF);
 try{Object.assign(cfg,JSON.parse(localStorage.getItem('mtv_wurf_cfg')||'{}'))}catch(e){}
 function saveCfg(){try{localStorage.setItem('mtv_wurf_cfg',JSON.stringify(cfg))}catch(e){}}
@@ -165,6 +191,7 @@ const fnorm=()=>0.5/Math.tan(cfg.fov*Math.PI/360);
 function markersFromGeometry(){const o=fnorm()*(cfg.S/2)/cfg.D;cfg.L=0.5-o;cfg.R=0.5+o;saveCfg();}
 function fovFromMarkers(){const o=Math.abs(cfg.R-cfg.L)/2;const fn=o*cfg.D/(cfg.S/2);cfg.fov=Math.round(2*Math.atan(0.5/fn)*1800/Math.PI)/10;saveCfg();}
 if(cfg.L==null)markersFromGeometry();
+if(!cfg.v2){cfg.v2=1;cfg.hold=5;if(+cfg.nRecent===0)cfg.nRecent=5;saveCfg();}
 
 /* ---------- Daten: Kader (nur lesen) + Würfe (Cloud-Dokument "wurf") ---------- */
 let K=[];                                   // Spieler aus dem Kadertool
@@ -192,7 +219,7 @@ const unitTxt=()=>cfg.unit==='kmh'?'km/h':'m/s';
 
 function renderWho(){$('who').textContent='👤 '+(curP?curP.name:'Wer wirft?');try{localStorage.setItem('mtv_wurf_cur',JSON.stringify(curP))}catch(e){}}
 function renderRecent(){
-  const n=+cfg.nRecent;if(!n){$('recent').innerHTML='';return;}
+  const n=+cfg.nRecent;if(!cfg.fRecent||!n){$('recent').innerHTML='';return;}
   const l=W.wuerfe.slice(-n).reverse();
   $('recent').innerHTML=l.length?'<div class="h">Letzte Würfe · antippen zum Ändern</div>'+l.map(w=>{const nm=nameOf(w);
     return `<div class="r${nm?'':' nn'}" data-w="${w.id}"><span>${esc(nm||'ohne Namen')}</span><b>${spd(w.v)}</b></div>`;}).join(''):'';
@@ -276,7 +303,7 @@ function onFrame(now,meta){
 }
 function backToReady(){
   const wasShow=state==='show';state='ready';$('result').style.display='none';setStatus();
-  if(wasShow&&+cfg.hsHold>0)showHS(pendingHS,+cfg.hsHold);
+  if(wasShow&&cfg.fHS&&+cfg.hsHold>0)showHS(pendingHS,+cfg.hsHold);
 }
 function process(t){
   if(!pctx||!vid.videoWidth)return;
@@ -357,10 +384,11 @@ function evaluate(){
 }
 let last=null;
 function showResult(v,dt,n){
-  const w={id:uid(),pid:curP?curP.pid:null,name:curP?curP.name:'',v:Math.round(v*1000)/1000,dt:Math.round(dt*10000)/10000,n,ts:new Date().toISOString()};
+  const cp=cfg.fWho?curP:null;
+  const w={id:uid(),pid:cp?cp.pid:null,name:cp?cp.name:'',v:Math.round(v*1000)/1000,dt:Math.round(dt*10000)/10000,n,ts:new Date().toISOString()};
   // Platz / Bestleistung vor dem Speichern bestimmen
   const k=keyOf(w);let placeTxt='';pendingHS=null;
-  if(k){
+  if(k&&cfg.fHS){
     const prev=ranking(cfg.scope).find(x=>keyOf(x)===k);
     W.wuerfe.push(w);
     if(!prev||w.v>prev.v){
@@ -428,7 +456,14 @@ ov.addEventListener('pointerup',()=>{if(!drag)return;const band=drag==='bt'||dra
 /* ---------- Einstellungen ---------- */
 const fields={iS:'S',iD:'D',iF:'fov',iH:'hold',iT:'thr',iHS:'hsHold',iB:'ball'};
 const sels={iU:'unit',iR:'nRecent',iN:'nTop',iSc:'scope'};
-function fillPanel(){$('iDg').checked=!!cfg.diag;for(const id in fields)$(id).value=cfg[fields[id]];for(const id in sels)$(id).value=String(cfg[sels[id]]);dminHint();}
+const feats=['fWho','fRecent','fHS'];
+function applyFeatures(){
+  $('who').style.display=cfg.fWho?'':'none';$('hsBtn').style.display=cfg.fHS?'':'none';
+  if(!cfg.fHS)hideHS();renderRecent();
+  if((cfg.fWho||cfg.fHS)&&!Cloud.user())Cloud.requireLogin(()=>loadData(),{title:'Wurfmessung',back:'../',logo:'../logo_mtv_schwarmstedt.jpg'});
+}
+feats.forEach(f=>$(f).addEventListener('change',()=>{cfg[f]=$(f).checked;saveCfg();applyFeatures();}));
+function fillPanel(){feats.forEach(f=>$(f).checked=!!cfg[f]);$('iDg').checked=!!cfg.diag;for(const id in fields)$(id).value=cfg[fields[id]];for(const id in sels)$(id).value=String(cfg[sels[id]]);dminHint();}
 function dminHint(){const dmin=(cfg.S/2)*1.15/Math.tan(cfg.fov*Math.PI/360);
   $('dminHint').textContent='Damit beide Stangen gut im Bild sind, braucht das iPad bei diesem Kamerawinkel mindestens ca. '+fmt(dmin,1)+' m Entfernung.';}
 for(const id in fields)$(id).addEventListener('change',()=>{const v=parseFloat($(id).value);if(v>=0){cfg[fields[id]]=v;saveCfg();dminHint();}});
@@ -439,12 +474,46 @@ $('bClose').addEventListener('click',()=>$('panel').classList.remove('open'));
 $('bGeo').addEventListener('click',()=>markersFromGeometry());
 $('bFov').addEventListener('click',()=>{fovFromMarkers();fillPanel();});
 $('bLearn').addEventListener('click',()=>{if(pctx)relearn();});
+/* ---------- Aufbau-Skizze (maßstäblich aus den aktuellen Werten) ---------- */
+function sketchSVG(){
+  const S=cfg.S,D=cfg.D,half=cfg.fov*Math.PI/360,dmin=(S/2)*1.15/Math.tan(half);
+  const k=Math.min(560/(S*1.5),270/D),cx=450,py=95,iy=py+D*k,hw=S/2*k;
+  const reach=(D+0.6)*k,fx=Math.tan(half)*reach;
+  const f=v=>fmt(v,1).replace(',0','');
+  return `<svg viewBox="0 0 900 ${Math.round(iy+70)}" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif">
+  <rect width="100%" height="100%" fill="#0d0e11"/>
+  <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#ffd166"/></marker>
+  <marker id="dm" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 2L5 5L0 8M10 2L5 5L10 8" stroke="#c9ced6" fill="none"/></marker></defs>
+  <path d="M${cx} ${iy} L${cx-fx} ${iy-reach} L${cx+fx} ${iy-reach}Z" fill="#3ec1ff22" stroke="#3ec1ff66" stroke-dasharray="6 6"/>
+  <text x="${cx}" y="${iy-40}" fill="#3ec1ff" font-size="14" text-anchor="middle">Bildbereich (${f(cfg.fov)}°)</text>
+  <line x1="40" y1="${py}" x2="860" y2="${py}" stroke="#ffd166" stroke-width="3" marker-end="url(#ar)"/>
+  <text x="40" y="${py-12}" fill="#ffd166" font-size="16">Wurfbahn – Ball fliegt über den Stangen</text>
+  <g fill="#ff9d1a"><circle cx="${cx-hw}" cy="${py}" r="9"/><circle cx="${cx+hw}" cy="${py}" r="9"/></g>
+  <text x="${cx-hw}" y="${py+30}" fill="#ff9d1a" font-size="15" text-anchor="middle">Stange L</text>
+  <text x="${cx+hw}" y="${py+30}" fill="#ff9d1a" font-size="15" text-anchor="middle">Stange R</text>
+  <line x1="${cx-hw}" y1="${py-40}" x2="${cx+hw}" y2="${py-40}" stroke="#c9ced6" marker-start="url(#dm)" marker-end="url(#dm)"/>
+  <text x="${cx}" y="${py-48}" fill="#fff" font-size="18" font-weight="700" text-anchor="middle">${f(S)} m</text>
+  <line x1="${cx}" y1="${py}" x2="${cx}" y2="${iy-16}" stroke="#c9ced6" stroke-dasharray="4 5"/>
+  <text x="${cx+12}" y="${(py+iy)/2}" fill="#fff" font-size="18" font-weight="700">${f(D)} m</text>
+  <text x="${cx+12}" y="${(py+iy)/2+20}" fill="#8b919b" font-size="13">mind. ${f(dmin)} m</text>
+  <rect x="${cx-30}" y="${iy-10}" width="60" height="20" rx="4" fill="#d0152b"/><circle cx="${cx}" cy="${iy-10}" r="4" fill="#fff"/>
+  <text x="${cx}" y="${iy+34}" fill="#fff" font-size="16" text-anchor="middle">iPad (quer, Rückkamera zu den Stangen)</text>
+  <g transform="translate(70 ${py+60})"><circle r="11" fill="#5dd39e"/><path d="M-14 40 L0 14 L14 40 M0 14 L0 -4 M0 4 L22 -14" stroke="#5dd39e" stroke-width="5" fill="none" stroke-linecap="round"/></g>
+  <text x="70" y="${py+128}" fill="#5dd39e" font-size="14" text-anchor="middle">Werfer außerhalb</text>
+  <text x="890" y="${iy+60}" fill="#8b919b" font-size="12" text-anchor="end">Draufsicht · maßstäblich nach den eingestellten Werten</text>
+  </svg>`;
+}
+function openSketch(){$('skSvg').innerHTML=sketchSVG();$('sketch').classList.add('open');}
+$('bSketch').addEventListener('click',openSketch);$('startSketch').addEventListener('click',openSketch);
+$('skClose').addEventListener('click',()=>$('sketch').classList.remove('open'));
+$('skPrint').addEventListener('click',()=>window.print());
+$('sketch').addEventListener('click',e=>{if(e.target===$('sketch'))$('sketch').classList.remove('open');});
 setStatus();
 
 /* ---------- Start ---------- */
-Cloud.requireLogin(()=>{loadData();},{title:'Wurfmessung',back:'../',logo:'../logo_mtv_schwarmstedt.jpg'});
+loadData();applyFeatures();
 document.addEventListener('visibilitychange',async()=>{
-  if(document.visibilityState!=='visible'||!Cloud.user())return;
+  if(document.visibilityState!=='visible')return;
   if(state==='track')return;await loadData();
 });
 })();
