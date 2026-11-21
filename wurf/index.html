@@ -85,7 +85,7 @@ input{-webkit-user-select:text;user-select:text}
   <span class="sp"></span>
   <button class="btn" id="who">👤 Wer wirft?</button>
   <button class="btn" id="hsBtn">🏆</button>
-  <button class="btn" id="editBtn">✎</button>
+  <button class="btn" id="editBtn">✎ Einrichten</button>
   <button class="btn" id="gearBtn">⚙︎</button>
 </div>
 
@@ -306,7 +306,7 @@ function backToReady(){
   if(wasShow&&cfg.fHS&&+cfg.hsHold>0)showHS(pendingHS,+cfg.hsHold);
 }
 function process(t){
-  if(!pctx||!vid.videoWidth)return;
+  if(!pctx||!vid.videoWidth||edit)return;   // beim Einrichten nicht messen
   const y0=Math.max(0,Math.floor(Math.min(cfg.bt,cfg.bb)*PH)),y1=Math.min(PH,Math.ceil(Math.max(cfg.bt,cfg.bb)*PH)),h=y1-y0;
   if(h<2)return;
   pctx.drawImage(vid,0,0,PW,PH);
@@ -430,11 +430,12 @@ function draw(){
   octx.setTransform(dpr,0,0,dpr,0,0);octx.clearRect(0,0,W_,H);
   const r=vrect(),bt=r.y+Math.min(cfg.bt,cfg.bb)*r.h,bb=r.y+Math.max(cfg.bt,cfg.bb)*r.h;
   octx.fillStyle='rgba(80,200,255,0.12)';octx.fillRect(r.x,bt,r.w,bb-bt);
-  octx.strokeStyle='rgba(80,200,255,0.8)';octx.lineWidth=edit?3:1.5;
-  for(const y of [bt,bb]){octx.beginPath();octx.moveTo(r.x,y);octx.lineTo(r.x+r.w,y);octx.stroke();}
-  octx.strokeStyle='#ff9d1a';octx.lineWidth=edit?4:2;octx.fillStyle='#ff9d1a';octx.font='bold 20px system-ui';
-  for(const k of ['L','R']){const x=r.x+cfg[k]*r.w;octx.beginPath();octx.moveTo(x,r.y);octx.lineTo(x,r.y+r.h);octx.stroke();octx.fillText(k,x+6,r.y+r.h-14);}
-  if(edit){octx.fillStyle='#fff';octx.font='18px system-ui';octx.fillText('Orange Linien auf die Stangen ziehen · blaues Band auf Flughöhe des Balls',r.x+16,r.y+r.h-44);}
+  if(!edit){
+    octx.strokeStyle='rgba(80,200,255,0.8)';octx.lineWidth=1.5;
+    for(const y of [bt,bb]){octx.beginPath();octx.moveTo(r.x,y);octx.lineTo(r.x+r.w,y);octx.stroke();}
+    octx.strokeStyle='#ff9d1a';octx.lineWidth=2;octx.fillStyle='#ff9d1a';octx.font='bold 20px system-ui';
+    for(const k of ['L','R']){const x=r.x+cfg[k]*r.w;octx.beginPath();octx.moveTo(x,r.y);octx.lineTo(x,r.y+r.h);octx.stroke();octx.fillText(k,x+6,r.y+r.h-14);}
+  }else drawEdit(r,bt,bb);
   octx.fillStyle='#4da3ff';
   if(cfg.diag&&mH){octx.imageSmoothingEnabled=false;octx.drawImage(mc,r.x,r.y+mY0/PH*r.h,r.w,mH/PH*r.h);}
   const py=y=>r.y+y/PH*r.h;
@@ -442,12 +443,43 @@ function draw(){
   if(blobX!=null){octx.strokeStyle='#3f3';octx.lineWidth=3;octx.beginPath();octx.arc(r.x+blobX/PW*r.w,py(blobY),14,0,7);octx.stroke();}
   $('fps').textContent=fpsAvg?Math.round(fpsAvg)+' B/s':'';
 }
-$('editBtn').addEventListener('click',()=>{edit=!edit;$('editBtn').classList.toggle('on',edit);});
+/* Einrichte-Modus: gut sichtbare Griffe zum Verschieben */
+function pill(x,y,txt,bgc,fg){octx.font='bold 17px system-ui';const w=octx.measureText(txt).width+22;
+  octx.fillStyle=bgc;octx.beginPath();octx.roundRect(x-w/2,y-16,w,32,16);octx.fill();octx.fillStyle=fg||'#000';octx.textAlign='center';octx.textBaseline='middle';octx.fillText(txt,x,y+1);octx.textAlign='start';octx.textBaseline='alphabetic';}
+function grip(x,y,col,vertical,active){
+  const rr=active?30:26;octx.save();octx.shadowColor=col;octx.shadowBlur=active?24:12;
+  octx.fillStyle=col;octx.beginPath();octx.arc(x,y,rr,0,7);octx.fill();octx.restore();
+  octx.strokeStyle='#fff';octx.lineWidth=3;octx.beginPath();octx.arc(x,y,rr,0,7);octx.stroke();
+  octx.fillStyle='#000';octx.beginPath();const a=11,b=7;
+  if(vertical){octx.moveTo(x,y-a-6);octx.lineTo(x-b,y-6);octx.lineTo(x+b,y-6);octx.closePath();octx.moveTo(x,y+a+6);octx.lineTo(x-b,y+6);octx.lineTo(x+b,y+6);octx.closePath();}
+  else{octx.moveTo(x-a-6,y);octx.lineTo(x-6,y-b);octx.lineTo(x-6,y+b);octx.closePath();octx.moveTo(x+a+6,y);octx.lineTo(x+6,y-b);octx.lineTo(x+6,y+b);octx.closePath();}
+  octx.fill();
+}
+function drawEdit(r,bt,bb){
+  // außerhalb des Bandes abdunkeln
+  octx.fillStyle='rgba(0,0,0,0.45)';octx.fillRect(r.x,r.y,r.w,bt-r.y);octx.fillRect(r.x,bb,r.w,r.y+r.h-bb);
+  const t=performance.now()/1000,pulse=0.6+0.4*Math.sin(t*4);
+  // Bandkanten
+  for(const [key,y] of [['bt',bt],['bb',bb]]){const act=drag===key;
+    octx.strokeStyle=`rgba(80,200,255,${act?1:pulse})`;octx.lineWidth=act?6:5;octx.setLineDash([16,10]);
+    octx.beginPath();octx.moveTo(r.x,y);octx.lineTo(r.x+r.w,y);octx.stroke();octx.setLineDash([]);
+    for(const gx of [r.x+r.w*0.25,r.x+r.w*0.75])grip(gx,y,'#50c8ff',true,act);}
+  pill(r.x+r.w*0.5,(bt+bb)/2,'Wurfbereich – Kanten hoch/runter ziehen','#50c8ffdd');
+  // Stangen
+  for(const k of ['L','R']){const x=r.x+cfg[k]*r.w,act=drag===k;
+    octx.strokeStyle=`rgba(255,157,26,${act?1:pulse})`;octx.lineWidth=act?7:6;octx.setLineDash([16,10]);
+    octx.beginPath();octx.moveTo(x,r.y);octx.lineTo(x,r.y+r.h);octx.stroke();octx.setLineDash([]);
+    for(const gy of [r.y+r.h*0.15,r.y+r.h*0.85])grip(x,gy,'#ff9d1a',false,act);
+    pill(x,r.y+r.h*0.15+48,'Stange '+k,'#ff9d1a');}
+  pill(r.x+r.w/2,r.y+26,'✎ Einrichten: Griffe ziehen · zum Beenden ✎ erneut tippen','#000c','#fff');
+}
+$('editBtn').addEventListener('click',()=>{edit=!edit;$('editBtn').classList.toggle('on',edit);blobX=null;
+  if(edit){$('result').style.display='none';hideHS();$('status').textContent='EINRICHTEN';$('status').className='';}else if(pctx)relearn();});
 ov.addEventListener('pointerdown',e=>{
   if(!edit)return;const r=vrect();
   const c=[['L',Math.abs(e.clientX-(r.x+cfg.L*r.w))],['R',Math.abs(e.clientX-(r.x+cfg.R*r.w))],
            ['bt',Math.abs(e.clientY-(r.y+cfg.bt*r.h))],['bb',Math.abs(e.clientY-(r.y+cfg.bb*r.h))]].sort((a,b)=>a[1]-b[1]);
-  if(c[0][1]<45){drag=c[0][0];ov.setPointerCapture(e.pointerId);}
+  if(c[0][1]<60){drag=c[0][0];ov.setPointerCapture(e.pointerId);}
 });
 ov.addEventListener('pointermove',e=>{if(!drag)return;const r=vrect(),cl=v=>Math.min(1,Math.max(0,v));
   if(drag==='L'||drag==='R')cfg[drag]=cl((e.clientX-r.x)/r.w);else cfg[drag]=cl((e.clientY-r.y)/r.h);});
