@@ -342,9 +342,34 @@ if(!Array.isArray(S.spiele))S.spiele=[];
 function save(){Cloud.save('kader',S);}
 /* Wurfmessung (Cloud-Dokument "wurf", nur lesen): drei schnellste Würfe je Spieler */
 let WURF=null;
-const top3=pid=>WURF&&Array.isArray(WURF.wuerfe)?WURF.wuerfe.filter(w=>w.pid===pid).sort((a,b)=>b.v-a.v).slice(0,3):[];
+const wOf=pid=>WURF&&Array.isArray(WURF.wuerfe)?WURF.wuerfe.filter(w=>w.pid===pid):[];
+const top3=pid=>WURF&&Array.isArray(WURF.wuerfe)?WURF.wuerfe.filter(w=>w.pid===pid&&w.art!=='pass').sort((a,b)=>b.v-a.v).slice(0,3):[];
 const kmh=v=>(v*3.6).toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1});
 async function loadWurf(){try{WURF=await Cloud.load('wurf',null);}catch(e){WURF=null;}}
+/* Wurf-Verlauf: Bestwert pro Tag und Wurfart */
+const W_ART=[['stand','Standwurf','#ff8a00'],['sprung','Sprungwurf','#3ec1ff'],['schlag','Schlagwurf','#5dd39e'],['pass','Pass','#ffd166'],['','ohne Wurfart','#c9ced6']];
+function wurfChart(pid){
+  const p=P(pid),all=wOf(pid);if(!p||!all.length)return;
+  const day=w=>w.ts.slice(0,10),days=[...new Set(all.map(day))].sort();
+  const series=W_ART.map(a=>{const m=new Map();for(const w of all){if((w.art||'')!==a[0])continue;const d=day(w);m.set(d,Math.max(m.get(d)||0,w.v*3.6));}return {a,m};}).filter(x=>x.m.size);
+  const vals=series.flatMap(x=>[...x.m.values()]),lo=Math.floor(Math.min(...vals)/10)*10-10,hi=Math.ceil(Math.max(...vals)/10)*10+5;
+  const Wd=720,Hd=320,L=46,R=16,T=16,B=40,X=i=>days.length<2?L+(Wd-L-R)/2:L+i*(Wd-L-R)/(days.length-1),Y=v=>T+(hi-v)*(Hd-T-B)/(hi-lo||1);
+  let g='';for(let v=Math.max(0,lo);v<=hi;v+=10)g+=`<line x1="${L}" x2="${Wd-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="#2b2f37"/><text x="${L-6}" y="${Y(v)+4}" fill="#8b919b" font-size="12" text-anchor="end">${v}</text>`;
+  const step=Math.max(1,Math.ceil(days.length/8));
+  days.forEach((d,i)=>{if(i%step===0||i===days.length-1)g+=`<text x="${X(i)}" y="${Hd-14}" fill="#8b919b" font-size="12" text-anchor="middle">${d.slice(8,10)}.${d.slice(5,7)}.</text>`;});
+  for(const {a,m} of series){const pts=days.map((d,i)=>m.has(d)?[X(i),Y(m.get(d))]:null).filter(Boolean);
+    g+=`<polyline points="${pts.map(q=>q.join(',')).join(' ')}" fill="none" stroke="${a[2]}" stroke-width="3"/>`+pts.map(q=>`<circle cx="${q[0]}" cy="${q[1]}" r="4.5" fill="${a[2]}"/>`).join('');}
+  const best=series.map(({a,m})=>`<div class="strow"><span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${a[2]};margin-right:6px"></i>${a[1]}</span><b>${kmh(Math.max(...m.values())/3.6)} km/h</b></div>`).join('');
+  const ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:14px';
+  ov.innerHTML=`<div class="card" style="width:min(780px,100%);max-height:92vh;overflow:auto;margin:0"><h2>🤾 Wurfgeschwindigkeit · ${esc(lbl(p))}</h2>
+    <svg viewBox="0 0 ${Wd} ${Hd}" style="width:100%;height:auto"><text x="${L}" y="12" fill="#8b919b" font-size="12">km/h · Bestwert pro Tag</text>${g}</svg>
+    ${best}<div class="muted" style="margin-top:6px">${all.length} Würfe an ${days.length} Tagen</div>
+    <div style="text-align:right;margin-top:10px"><button class="btn pri">Schließen</button></div></div>`;
+  ov.addEventListener('click',e=>{if(e.target===ov||e.target.closest('button'))ov.remove();});
+  document.body.appendChild(ov);
+}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-wv]');if(b){e.stopPropagation();wurfChart(b.dataset.wv);}},true);
 function cur(){let a=S.auf.find(x=>x.id===S.cur);if(!a){if(!S.auf.length)S.auf.push(newAuf('Startaufstellung'));a=S.auf[0];S.cur=a.id;}return a;}
 const P=id=>S.kader.find(p=>p.id===id);
 const byNr=()=>[...S.kader].sort((a,b)=>((a.nr===''||a.nr==null)?999:+a.nr)-((b.nr===''||b.nr==null)?999:+b.nr)||a.name.localeCompare(b.name));
@@ -383,7 +408,7 @@ $('#k-save').addEventListener('click',()=>{
 function renderKader(){
   const list=byNr();
   $('#k-count').textContent='('+list.length+')';
-  $('#k-list').innerHTML=list.length?list.map(p=>`<div class="item"><div class="nrb">${esc(p.nr)}</div><div class="grow"><b>${esc(p.name)}</b>${(p.pos||[]).map(k=>`<span class="tag">${k}</span>`).join('')||'<span class="muted">keine Position</span>'}${p.lh?'<span class="tag" style="background:var(--silver);color:#0d0e11">Linkshänder</span>':''}${(t=>t.length?`<span class="tag" title="Schnellste Würfe">🤾 ${t.map(w=>kmh(w.v)).join(' · ')} km/h</span>`:'')(top3(p.id))}</div><button class="btn sm" data-edit="${p.id}">Bearbeiten</button><button class="btn sm del" data-del="${p.id}">✕</button></div>`).join(''):'<div class="muted">Noch keine Spieler angelegt.</div>';
+  $('#k-list').innerHTML=list.length?list.map(p=>`<div class="item"><div class="nrb">${esc(p.nr)}</div><div class="grow"><b>${esc(p.name)}</b>${(p.pos||[]).map(k=>`<span class="tag">${k}</span>`).join('')||'<span class="muted">keine Position</span>'}${p.lh?'<span class="tag" style="background:var(--silver);color:#0d0e11">Linkshänder</span>':''}${(t=>t.length?`<span class="tag" data-wv="${p.id}" title="Verlauf anzeigen" style="cursor:pointer">🤾 ${t.map(w=>kmh(w.v)).join(' · ')} km/h ›</span>`:'')(top3(p.id))}</div><button class="btn sm" data-edit="${p.id}">Bearbeiten</button><button class="btn sm del" data-del="${p.id}">✕</button></div>`).join(''):'<div class="muted">Noch keine Spieler angelegt.</div>';
 }
 $('#k-list').addEventListener('click',e=>{
   const ed=e.target.closest('[data-edit]'),dl=e.target.closest('[data-del]');
@@ -795,7 +820,7 @@ function renderSide(a,m){
         (isTW(p)&&twVal(p)!=null?`<div class="strow"><span>Torwart</span><b>${fmt(twVal(p))}</b></div>`:'')+
         `<div class="muted">Stand ${e.datum.split('-').reverse().join('.')}</div>`+(e.notiz?`<div style="margin-top:6px;font-size:14px;white-space:pre-wrap">${esc(e.notiz)}</div>`:'')
         :'<div class="muted">Noch keine Bewertung.</div>')+
-        (t=>t.length?`<div class="strow"><span>Schnellste Würfe</span><b>${t.map(w=>kmh(w.v)).join(' · ')} km/h</b></div>`:'')(top3(p.id))+'</div>';
+        (t=>t.length?`<div class="strow" data-wv="${p.id}" style="cursor:pointer"><span>Schnellste Würfe ›</span><b>${t.map(w=>kmh(w.v)).join(' · ')} km/h</b></div>`:'')(top3(p.id))+'</div>';
     }
   }
   $('#a-side').innerHTML=h;

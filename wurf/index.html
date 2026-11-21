@@ -73,6 +73,27 @@ input{-webkit-user-select:text;user-select:text}
 #start img{height:90px;border-radius:50%}
 #start .go{font-size:28px;padding:18px 40px;border-radius:16px;border:0;background:var(--red);color:#fff;font-weight:700}
 #err{color:#f88;max-width:600px}
+#chPanel{position:fixed;left:12px;top:calc(max(10px,env(safe-area-inset-top)) + 58px);width:270px;z-index:2;background:#000c;border:1px solid #fff3;border-left:4px solid var(--gold);border-radius:12px;padding:10px 12px;display:none;font-size:16px}
+#chPanel h5{margin:0 0 6px;font-size:15px;color:var(--gold)}
+#chPanel .cr{display:flex;justify-content:space-between;gap:8px;padding:3px 0}
+#chPanel .cr b{font-variant-numeric:tabular-nums}
+#chPanel .teams{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#chPanel .tm{border-radius:10px;padding:8px;text-align:center;background:#1f2228;border:2px solid transparent}
+#chPanel .tm.on{border-color:var(--gold)}
+#chPanel .tm big{display:block;font-size:30px;font-weight:800;font-variant-numeric:tabular-nums}
+#chPanel .muted{opacity:.6;font-size:13px}
+#chRes{font-size:28px;font-weight:700;margin-top:4px}
+#slowBtn{margin-top:8px;font-size:18px}
+#hsArt{display:flex;gap:6px;flex-wrap:wrap;margin:-4px 0 8px}#hsArt button{font-size:14px;padding:5px 9px}
+#replay{position:fixed;inset:0;background:#000;z-index:9;display:none;flex-direction:column}
+#replay.open{display:flex}
+#rpWrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
+#rpC{width:100%;height:100%;object-fit:contain}
+.rpBar{display:flex;gap:8px;align-items:center;padding:10px 14px;padding-bottom:max(10px,env(safe-area-inset-bottom));background:#111}
+.rpBar input[type=range]{flex:1;height:34px}
+#rpTime{font-variant-numeric:tabular-nums;min-width:120px;text-align:right;opacity:.8}
+.cs label{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:10px 0;font-size:18px}
+.cs input[type=number],.cs input[type=text]{font-size:18px;width:170px;padding:8px;border-radius:8px;border:1px solid #555;background:#222;color:#fff}
 </style>
 </head>
 <body>
@@ -83,6 +104,10 @@ input{-webkit-user-select:text;user-select:text}
   <a class="btn" href="../" title="Cockpit">←</a>
   <span id="status">–</span><span id="fps"></span>
   <span class="sp"></span>
+  <button class="btn" id="chBtn">🎯</button>
+  <button class="btn" id="teamBtn"></button>
+  <button class="btn" id="artBtn"></button>
+  <button class="btn" id="handBtn"></button>
   <button class="btn" id="who">👤 Wer wirft?</button>
   <button class="btn" id="hsBtn">🏆</button>
   <button class="btn" id="editBtn">✎ Einrichten</button>
@@ -90,18 +115,21 @@ input{-webkit-user-select:text;user-select:text}
 </div>
 
 <div id="recent"></div>
+<div id="chPanel"></div>
 
 <div id="result">
   <div id="msg"></div>
   <div id="val">
     <div id="rWho"></div>
     <div><span id="big">0,0</span> <span id="bigU">km/h</span></div>
-    <div id="small"></div><div id="place"></div><div id="info"></div>
+    <div id="small"></div><div id="place"></div><div id="chRes"></div><div id="info"></div>
+    <button class="btn" id="slowBtn">▶ Zeitlupe</button>
   </div>
 </div>
 
 <div id="hs">
   <h2><span id="hsTitle">Bestenliste</span><span class="seg"><button class="btn" data-sc="heute">Heute</button><button class="btn" data-sc="gesamt">Gesamt</button></span></h2>
+  <div id="hsArt"></div>
   <div id="hsList"></div>
 </div>
 
@@ -111,6 +139,34 @@ input{-webkit-user-select:text;user-select:text}
   <div class="sub" id="shGastH">Gäste</div><div id="shGast" class="chips"></div>
   <div class="srow"><input id="gName" placeholder="Gast-Name eingeben" maxlength="30"><button class="btn pri" id="gAdd">Übernehmen</button></div>
   <div class="srow"><button class="btn" id="shNone">Ohne Namen</button><button class="btn danger" id="shDel">Wurf löschen</button><span class="sp"></span><button class="btn" id="shClose">Abbrechen</button></div>
+</div></div>
+
+<div id="replay">
+  <div id="rpWrap"><canvas id="rpC"></canvas></div>
+  <div class="rpBar">
+    <button class="btn" id="rpPlay">⏸</button>
+    <input type="range" id="rpPos" min="0" max="0" value="0">
+    <button class="btn" data-rs="0.1">⅒×</button><button class="btn" data-rs="0.25">¼×</button><button class="btn" data-rs="1">1×</button>
+    <span id="rpTime"></span>
+    <button class="btn pri" id="rpClose">✕ Schließen</button>
+  </div>
+</div>
+
+<div class="sheet" id="chSheet"><div class="sheetIn cs">
+  <h3>🎯 Challenge</h3>
+  <div class="chips" id="chType">
+    <button class="chip" data-ct="ziel">Zielwert</button>
+    <button class="chip" data-ct="team">Teamduell</button>
+    <button class="chip" data-ct="serie">3er-Serie</button>
+  </div>
+  <div class="hint" id="chHint" style="opacity:.7;margin-top:10px"></div>
+  <label id="chZiel">Ziel (km/h)<input id="chTarget" type="number" step="1" min="5" max="150"></label>
+  <div id="chTeam">
+    <label>Team 1<input id="chT1" type="text" maxlength="20"></label>
+    <label>Team 2<input id="chT2" type="text" maxlength="20"></label>
+    <label>Nach jedem Wurf Team wechseln<input id="chAlt" type="checkbox" class="cb"></label>
+  </div>
+  <div class="srow"><button class="btn danger" id="chEnd">Challenge beenden</button><span class="sp"></span><button class="btn" id="chCancel">Abbrechen</button><button class="btn pri" id="chGo">Starten</button></div>
 </div></div>
 
 <div class="sheet" id="sketch"><div class="sheetIn">
@@ -151,6 +207,11 @@ input{-webkit-user-select:text;user-select:text}
   <label>Letzte Würfe anzeigen<input id="fRecent" type="checkbox" class="cb"></label>
   <label>&nbsp;&nbsp;Anzahl<select id="iR"><option>3</option><option>5</option><option>10</option></select></label>
   <label>🏆 Bestenliste &amp; Platz<input id="fHS" type="checkbox" class="cb"></label>
+  <label>🤾 Wurfart &amp; Hand (inkl. Pass)<input id="fArt" type="checkbox" class="cb"></label>
+  <label>▶ Zeitlupe nach dem Wurf<input id="fSlow" type="checkbox" class="cb"></label>
+  <label>&nbsp;&nbsp;automatisch abspielen<input id="fSlowAuto" type="checkbox" class="cb"></label>
+  <label>🔊 Ansage<input id="fVoice" type="checkbox" class="cb"></label>
+  <label>🎯 Challenge<input id="fCh" type="checkbox" class="cb"></label>
   <div class="hint">Namen und Bestenliste brauchen die Anmeldung (Kader &amp; Speicherung in der Cloud).</div>
   <label>Bestenliste: Top<select id="iN"><option>3</option><option>5</option><option>10</option></select></label>
   <label>Bestenliste zeigen (s)<input id="iHS" type="number" step="1" min="0"></label>
@@ -183,7 +244,7 @@ const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const vid=$('vid'), ov=$('ov'), octx=ov.getContext('2d');
 
 /* ---------- Geräte-Einstellungen (lokal) ---------- */
-const DEF={S:5,D:6,fov:60,hold:5,thr:25,unit:'kmh',L:null,R:null,bt:0.25,bb:0.70,ball:17,diag:false,nRecent:5,nTop:5,fWho:false,fRecent:false,fHS:false,hsHold:6,scope:'heute'};
+const DEF={S:5,D:6,fov:60,hold:5,thr:25,unit:'kmh',L:null,R:null,bt:0.25,bb:0.70,ball:17,diag:false,nRecent:5,nTop:5,fWho:false,fRecent:false,fHS:false,fArt:false,fSlow:false,fSlowAuto:false,fVoice:false,fCh:false,hsHold:6,scope:'heute'};
 let cfg=Object.assign({},DEF);
 try{Object.assign(cfg,JSON.parse(localStorage.getItem('mtv_wurf_cfg')||'{}'))}catch(e){}
 function saveCfg(){try{localStorage.setItem('mtv_wurf_cfg',JSON.stringify(cfg))}catch(e){}}
@@ -204,14 +265,27 @@ async function loadData(){
   K=(kd&&Array.isArray(kd.kader))?kd.kader.slice().sort((a,b)=>((a.nr===''||a.nr==null)?999:+a.nr)-((b.nr===''||b.nr==null)?999:+b.nr)||String(a.name).localeCompare(b.name)):[];
   W=normW(await Cloud.load('wurf',null))||W;
   try{const c=JSON.parse(localStorage.getItem('mtv_wurf_cur'));if(c)curP=c;}catch(e){}
-  renderWho();renderRecent();
+  renderWho();renderRecent();renderCH();
 }
 const nameOf=w=>{if(w.pid){const p=K.find(x=>x.id===w.pid);if(p)return p.name;}return w.name||'';};
 const keyOf=w=>w.pid?'p:'+w.pid:(w.name?'g:'+w.name.trim().toLowerCase():null);
+const ARTEN=[['stand','Standwurf'],['sprung','Sprungwurf'],['schlag','Schlagwurf'],['pass','Pass']];
+const artName=k=>(ARTEN.find(a=>a[0]===k)||[,''])[1];
+let curArt='stand',curHand='R';
+try{const a=JSON.parse(localStorage.getItem('mtv_wurf_art'));if(a){curArt=a.art||curArt;curHand=a.hand||curHand;}}catch(e){}
+function saveArt(){try{localStorage.setItem('mtv_wurf_art',JSON.stringify({art:curArt,hand:curHand}))}catch(e){}}
+/* Kategorie-Filter: 'alle' = alle Würfe ohne Pässe, sonst genau diese Wurfart */
+const inCat=(w,cat)=>!cat||cat==='alle'?w.art!=='pass':w.art===cat;
+const catOfNew=()=>cfg.fArt?curArt:'alle';
+function renderArt(){
+  $('artBtn').textContent='🤾 '+artName(curArt);$('handBtn').textContent=curHand==='L'?'✋ Links':'✋ Rechts';saveArt();
+}
+$('artBtn').addEventListener('click',()=>{const i=ARTEN.findIndex(a=>a[0]===curArt);curArt=ARTEN[(i+1)%ARTEN.length][0];renderArt();});
+$('handBtn').addEventListener('click',()=>{curHand=curHand==='L'?'R':'L';renderArt();});
 function dayStart(){const d=new Date();d.setHours(0,0,0,0);return d.getTime();}
-function ranking(scope){
+function ranking(scope,cat){
   const t0=scope==='heute'?dayStart():0, best=new Map();
-  for(const w of W.wuerfe){const k=keyOf(w);if(!k||Date.parse(w.ts)<t0)continue;const b=best.get(k);if(!b||w.v>b.v)best.set(k,w);}
+  for(const w of W.wuerfe){const k=keyOf(w);if(!k||Date.parse(w.ts)<t0||!inCat(w,cat))continue;const b=best.get(k);if(!b||w.v>b.v)best.set(k,w);}
   return [...best.values()].sort((a,b)=>b.v-a.v);
 }
 const spd=v=>cfg.unit==='kmh'?fmt(v*3.6,1):fmt(v,1);
@@ -222,26 +296,29 @@ function renderRecent(){
   const n=+cfg.nRecent;if(!cfg.fRecent||!n){$('recent').innerHTML='';return;}
   const l=W.wuerfe.slice(-n).reverse();
   $('recent').innerHTML=l.length?'<div class="h">Letzte Würfe · antippen zum Ändern</div>'+l.map(w=>{const nm=nameOf(w);
-    return `<div class="r${nm?'':' nn'}" data-w="${w.id}"><span>${esc(nm||'ohne Namen')}</span><b>${spd(w.v)}</b></div>`;}).join(''):'';
+    const tag=w.art?` <small style="opacity:.6">${artName(w.art).replace('wurf','')}${w.hand?' '+w.hand:''}</small>`:'';
+    return `<div class="r${nm?'':' nn'}" data-w="${w.id}"><span>${esc(nm||'ohne Namen')}${tag}</span><b>${spd(w.v)}</b></div>`;}).join(''):'';
 }
 $('recent').addEventListener('click',e=>{const r=e.target.closest('[data-w]');if(r)openSheet(r.dataset.w);});
 
 /* ---------- Bestenliste ---------- */
-let hsTimer=null, hsMe=null, hsScope=null;
+let hsTimer=null, hsMe=null, hsScope=null, hsCat='alle';
 function showHS(meKey,secs){
   hsMe=meKey||null;if(!hsScope)hsScope=cfg.scope;renderHS();$('hs').style.display='block';
   clearTimeout(hsTimer);if(secs)hsTimer=setTimeout(hideHS,secs*1000);
 }
 function hideHS(){clearTimeout(hsTimer);$('hs').style.display='none';hsScope=null;}
 function renderHS(){
-  const sc=hsScope||cfg.scope, N=+cfg.nTop, r=ranking(sc).slice(0,N);
-  $('hsTitle').textContent='Top '+N+' · '+(sc==='heute'?'Heute':'Gesamt');
+  const sc=hsScope||cfg.scope, N=+cfg.nTop, cat=cfg.fArt?hsCat:'alle', r=ranking(sc,cat).slice(0,N);
+  $('hsTitle').textContent='Top '+N+' · '+(sc==='heute'?'Heute':'Gesamt')+(cat!=='alle'?' · '+artName(cat):'');
+  $('hsArt').style.display=cfg.fArt?'':'none';
+  $('hsArt').innerHTML=[['alle','Alle Würfe'],...ARTEN].map(a=>`<button class="btn${a[0]===cat?' on':''}" data-cat="${a[0]}">${a[1]}</button>`).join('');
   document.querySelectorAll('#hs [data-sc]').forEach(b=>b.classList.toggle('on',b.dataset.sc===sc));
   $('hsList').innerHTML=r.length?r.map((w,i)=>`<div class="row p${i+1}${keyOf(w)===hsMe?' me':''}"><span class="pl">${i+1}.</span><span>${esc(nameOf(w))}</span><b>${spd(w.v)} ${unitTxt()}</b></div>`).join('')
     :'<div class="empty">Noch keine Würfe mit Namen.</div>';
 }
-$('hs').addEventListener('click',e=>{const b=e.target.closest('[data-sc]');if(b){hsScope=b.dataset.sc;renderHS();clearTimeout(hsTimer);return;}hideHS();});
-$('hsBtn').addEventListener('click',()=>{if($('hs').style.display==='block')hideHS();else showHS(null,0);});
+$('hs').addEventListener('click',e=>{const c=e.target.closest('[data-cat]');if(c){hsCat=c.dataset.cat;renderHS();clearTimeout(hsTimer);return;}const b=e.target.closest('[data-sc]');if(b){hsScope=b.dataset.sc;renderHS();clearTimeout(hsTimer);return;}hideHS();});
+$('hsBtn').addEventListener('click',()=>{if($('hs').style.display==='block')hideHS();else{hsCat=catOfNew();showHS(null,0);}});
 
 /* ---------- Werfer wählen / Wurf ändern ---------- */
 let sheetW=null;   // null = Werfer wählen, sonst Wurf-ID
@@ -259,7 +336,7 @@ function openSheet(wid){
 function choose(pid,name){
   const sel=pid||name?{pid:pid||null,name:pid?(K.find(p=>p.id===pid)||{}).name:name}:null;
   if(sheetW){const w=W.wuerfe.find(x=>x.id===sheetW);if(w){w.pid=sel?sel.pid:null;w.name=sel?sel.name:'';saveW();}}
-  else{curP=sel;renderWho();}
+  else{curP=sel;renderWho();if(sel&&sel.pid){const p=K.find(x=>x.id===sel.pid);if(p){curHand=p.lh?'L':'R';renderArt();}}}
   $('sheet').classList.remove('open');renderRecent();if($('hs').style.display==='block')renderHS();
 }
 $('sheet').addEventListener('click',e=>{
@@ -280,7 +357,7 @@ $('startBtn').addEventListener('click',async()=>{
     vid.srcObject=st;await vid.play();
     $('start').style.display='none';
     try{await navigator.wakeLock.request('screen')}catch(e){}
-    setupProc();schedule();
+    unlockVoice();setupProc();schedule();
   }catch(e){$('err').textContent='Kamera nicht verfügbar: '+e.message+' (Kamerazugriff in Safari erlauben).';}
 });
 
@@ -298,7 +375,7 @@ function schedule(){if(vid.requestVideoFrameCallback)vid.requestVideoFrameCallba
 function onFrame(now,meta){
   let t=now;
   if(meta){if(meta.captureTime)t=meta.captureTime;else if(meta.mediaTime>0)t=meta.mediaTime*1000;else if(meta.expectedDisplayTime)t=meta.expectedDisplayTime;}
-  if(t>lastT){const dt=t-lastT;if(lastT&&dt<500)fpsAvg=fpsAvg?fpsAvg*0.9+(1000/dt)*0.1:1000/dt;lastT=t;process(t);}
+  if(t>lastT){const dt=t-lastT;if(lastT&&dt<500)fpsAvg=fpsAvg?fpsAvg*0.9+(1000/dt)*0.1:1000/dt;lastT=t;process(t);capture(t);}
   draw();schedule();
 }
 function backToReady(){
@@ -306,7 +383,7 @@ function backToReady(){
   if(wasShow&&cfg.fHS&&+cfg.hsHold>0)showHS(pendingHS,+cfg.hsHold);
 }
 function process(t){
-  if(!pctx||!vid.videoWidth||edit)return;   // beim Einrichten nicht messen
+  if(!pctx||!vid.videoWidth||edit||replaying)return;   // beim Einrichten / in der Zeitlupe nicht messen
   const y0=Math.max(0,Math.floor(Math.min(cfg.bt,cfg.bb)*PH)),y1=Math.min(PH,Math.ceil(Math.max(cfg.bt,cfg.bb)*PH)),h=y1-y0;
   if(h<2)return;
   pctx.drawImage(vid,0,0,PW,PH);
@@ -341,7 +418,7 @@ function process(t){
   const found=best&&best.sum>=minPix&&(best.b-best.a)<=Math.max(8,ballPx*8);
   blobX=found?best.sx/best.sum:null;blobY=found?best.sy/best.sum:null;
 
-  if(state==='ready'){if(found){state='track';samples=[{t,x:blobX,y:blobY}];miss=0;hideHS();setStatus();}}
+  if(state==='ready'){if(found){if(postN>0)freezeClip();state='track';samples=[{t,x:blobX,y:blobY}];miss=0;hideHS();setStatus();}}
   else if(state==='track'){
     if(found){samples.push({t,x:blobX,y:blobY});miss=0;}else miss++;
     if(miss>=3||t-samples[0].t>3000)evaluate();
@@ -386,18 +463,27 @@ let last=null;
 function showResult(v,dt,n){
   const cp=cfg.fWho?curP:null;
   const w={id:uid(),pid:cp?cp.pid:null,name:cp?cp.name:'',v:Math.round(v*1000)/1000,dt:Math.round(dt*10000)/10000,n,ts:new Date().toISOString()};
-  // Platz / Bestleistung vor dem Speichern bestimmen
-  const k=keyOf(w);let placeTxt='';pendingHS=null;
+  if(cfg.fArt){w.art=curArt;w.hand=curHand;}
+  if(cfg.fCh&&CH){w.ch=CH.id;if(CH.type==='team')w.team=CH.cur;}
+  // Platz / Bestleistung vor dem Speichern bestimmen (innerhalb der Wurfart)
+  const k=keyOf(w),cat=catOfNew();let placeTxt='',placeSay='';pendingHS=null;
   if(k&&cfg.fHS){
-    const prev=ranking(cfg.scope).find(x=>keyOf(x)===k);
+    const prev=ranking(cfg.scope,cat).find(x=>keyOf(x)===k);
     W.wuerfe.push(w);
-    if(!prev||w.v>prev.v){
-      const pl=ranking(cfg.scope).findIndex(x=>keyOf(x)===k)+1;
-      placeTxt=pl<=+cfg.nTop?'🏆 Platz '+pl+(cfg.scope==='heute'?' heute!':'!'):'⭐ Neue Bestleistung!';
+    if(inCat(w,cat)&&(!prev||w.v>prev.v)){
+      const pl=ranking(cfg.scope,cat).findIndex(x=>keyOf(x)===k)+1;
+      if(pl<=+cfg.nTop){placeTxt='🏆 Platz '+pl+(cfg.scope==='heute'?' heute!':'!');placeSay='Platz '+pl;}
+      else{placeTxt='⭐ Neue Bestleistung!';placeSay='Neue Bestleistung';}
     }
-    pendingHS=k;
+    pendingHS=k;hsCat=cat;
   }else W.wuerfe.push(w);
-  saveW();renderRecent();
+  const chTxt=cfg.fCh&&CH?challengeResult(w):'';
+  if(cfg.fCh&&CH&&CH.type==='team'&&CH.alt){CH.cur=CH.cur==='A'?'B':'A';saveCH();}
+  saveW();renderRecent();renderCH();
+  say([cfg.fWho&&nameOf(w)?nameOf(w):'',sayVal(w.v),placeSay,chTxt.replace(/[^\wäöüÄÖÜß ,.]/g,'')].filter(Boolean).join('. '));
+  $('chRes').textContent=chTxt;
+  clipFor=w.id;postN=cfg.fSlow?Math.max(6,Math.round((fpsAvg||30)*0.4)):0;
+  $('slowBtn').style.display='none';
   last=w;state='show';until=performance.now()+cfg.hold*1000;quiet=0;waitN=0;
   $('msg').style.display='none';$('val').style.display='block';$('result').style.display='block';
   $('place').textContent='';clearTimeout(showResult.t);
@@ -413,13 +499,133 @@ function renderVal(){
   $('info').textContent='Δt '+fmt(last.dt,3)+' s · '+last.n+' Bilder';
 }
 function fail(txt){
+  postN=0;
   state='fail';failTxt=txt;until=performance.now()+1500;quiet=0;waitN=0;
   $('val').style.display='none';$('msg').style.display='block';$('msg').textContent='Keine gültige Messung: '+txt;
   $('result').style.display='block';setStatus();
 }
-$('result').addEventListener('click',()=>{if($('val').style.display==='none')return;cfg.unit=cfg.unit==='kmh'?'ms':'kmh';saveCfg();renderVal();renderRecent();});
+$('result').addEventListener('click',e=>{if(e.target.closest('#slowBtn'))return;if($('val').style.display==='none')return;cfg.unit=cfg.unit==='kmh'?'ms':'kmh';saveCfg();renderVal();renderRecent();});
 function setStatus(){const el=$('status');el.className=state;
   el.textContent={learn:'Hintergrund lernen …',ready:'BEREIT',track:'MESSUNG …',show:'ERGEBNIS',fail:'UNGÜLTIG'}[state];el.title=state==='fail'?failTxt:'';}
+
+/* ---------- Sprachansage ---------- */
+function unlockVoice(){try{if(window.speechSynthesis){const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u);}}catch(e){}}
+function sayVal(v){return cfg.unit==='kmh'?fmt(v*3.6,1).replace(',',' Komma ')+' Kilometer pro Stunde':fmt(v,1).replace(',',' Komma ')+' Meter pro Sekunde';}
+function say(txt){
+  if(!cfg.fVoice||!window.speechSynthesis||!txt)return;
+  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(txt.replace(' Komma 0 ',' '));u.lang='de-DE';u.rate=1.05;
+    const v=speechSynthesis.getVoices().find(x=>/^de/i.test(x.lang));if(v)u.voice=v;speechSynthesis.speak(u);}catch(e){}
+}
+
+/* ---------- Zeitlupe: Ringpuffer der letzten Bilder, nach dem Wurf eingefroren ---------- */
+const RB=90;let ring=[],ringI=0,spare=[],clip=null,clipFor=null,postN=0,replaying=false,rbW=0,rbH=0;
+function newFrame(){const c=document.createElement('canvas');c.width=rbW;c.height=rbH;return {c,x:c.getContext('2d'),t:-1};}
+function capture(t){
+  if(!cfg.fSlow||replaying||edit||!vid.videoWidth)return;
+  if(!ring.length){rbW=Math.min(480,Math.round(vid.videoWidth/2))||360;rbH=Math.round(rbW*vid.videoHeight/vid.videoWidth);for(let i=0;i<RB;i++)ring.push(newFrame());}
+  const f=ring[ringI];f.x.drawImage(vid,0,0,rbW,rbH);f.t=t;ringI=(ringI+1)%RB;
+  if(postN>0&&--postN===0)freezeClip();
+}
+function freezeClip(){
+  postN=0;if(!ring.length||!lastSamples.length)return;
+  const t0=lastSamples[0].t-1000,frames=[];
+  for(let i=0;i<RB;i++){const j=(ringI+i)%RB,f=ring[j];if(f.t>=t0){frames.push(f);ring[j]=spare.pop()||newFrame();}}
+  if(clip)spare.push(...clip.frames);
+  clip={frames,samples:lastSamples.slice(),wid:clipFor,L:cfg.L,R:cfg.R};
+  if(frames.length>2){$('slowBtn').style.display='';if(cfg.fSlowAuto&&state==='show')openReplay();}
+}
+let rp={i:0,play:true,speed:0.25,head:0,lastNow:0,raf:0};
+function openReplay(){
+  if(!clip||clip.frames.length<2)return;
+  replaying=true;$('replay').classList.add('open');$('result').style.display='none';hideHS();
+  const c=$('rpC');c.width=rbW*2;c.height=rbH*2;
+  $('rpPos').max=clip.frames.length-1;rp.i=0;rp.head=clip.frames[0].t;rp.play=true;rp.lastNow=performance.now();
+  $('rpPlay').textContent='⏸';markSpeed();cancelAnimationFrame(rp.raf);rp.raf=requestAnimationFrame(rpTick);
+}
+function closeReplay(){cancelAnimationFrame(rp.raf);$('replay').classList.remove('open');replaying=false;if(pctx)relearn();}
+function rpTick(now){
+  const fr=clip.frames,t0=fr[0].t,t1=fr[fr.length-1].t;
+  if(rp.play){rp.head+=(now-rp.lastNow)*rp.speed;if(rp.head>t1){rp.head=t0;}
+    let i=0;while(i<fr.length-1&&fr[i+1].t<=rp.head)i++;rp.i=i;$('rpPos').value=i;}
+  rp.lastNow=now;rpDraw();rp.raf=requestAnimationFrame(rpTick);
+}
+function rpDraw(){
+  const c=$('rpC'),x=c.getContext('2d'),f=clip.frames[rp.i],sx=c.width,sy=c.height;
+  x.drawImage(f.c,0,0,sx,sy);
+  x.strokeStyle='#ff9d1a';x.lineWidth=3;x.setLineDash([12,8]);
+  for(const k of ['L','R']){const px=clip[k]*sx;x.beginPath();x.moveTo(px,0);x.lineTo(px,sy);x.stroke();}
+  x.setLineDash([]);x.fillStyle='#4da3ff';
+  for(const p of clip.samples){if(p.t>f.t)break;x.beginPath();x.arc(p.x/PW*sx,p.y/PH*sy,5,0,7);x.fill();}
+  const ms=Math.round(f.t-clip.samples[0].t);
+  $('rpTime').textContent=(ms>=0?'+':'')+ms+' ms · '+(rp.i+1)+'/'+clip.frames.length;
+}
+function markSpeed(){document.querySelectorAll('#replay [data-rs]').forEach(b=>b.classList.toggle('on',+b.dataset.rs===rp.speed));}
+$('slowBtn').addEventListener('click',e=>{e.stopPropagation();openReplay();});
+$('rpClose').addEventListener('click',closeReplay);
+$('rpPlay').addEventListener('click',()=>{rp.play=!rp.play;$('rpPlay').textContent=rp.play?'⏸':'▶';rp.head=clip.frames[rp.i].t;});
+$('rpPos').addEventListener('input',()=>{rp.play=false;$('rpPlay').textContent='▶';rp.i=+$('rpPos').value;rp.head=clip.frames[rp.i].t;});
+document.querySelectorAll('#replay [data-rs]').forEach(b=>b.addEventListener('click',()=>{rp.speed=+b.dataset.rs;markSpeed();}));
+
+/* ---------- Challenge ---------- */
+let CH=null;   // {id,type:'ziel'|'team'|'serie',target(km/h),t:[name1,name2],cur:'A'|'B',alt}
+try{CH=JSON.parse(localStorage.getItem('mtv_wurf_ch'));}catch(e){}
+function saveCH(){try{localStorage.setItem('mtv_wurf_ch',JSON.stringify(CH))}catch(e){}}
+const chThrows=()=>CH?W.wuerfe.filter(w=>w.ch===CH.id):[];
+const avg=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:0;
+function teamStats(){const r={A:[],B:[]};for(const w of chThrows())if(r[w.team])r[w.team].push(w.v);return r;}
+function seriesOf(){const m=new Map();for(const w of chThrows()){const k=keyOf(w);if(!k)continue;if(!m.has(k))m.set(k,[]);const a=m.get(k);if(a.length<3)a.push(w);}return m;}
+function challengeResult(w){
+  if(CH.type==='ziel'){const diff=CH.target-w.v*3.6;return diff<=0?'✅ Ziel erreicht!':'Noch '+fmt(diff,1)+' km/h bis zum Ziel';}
+  if(CH.type==='team')return '➕ '+(CH.t[w.team==='A'?0:1]||'Team');
+  if(CH.type==='serie'){const k=keyOf(w);if(!k)return 'Für die Serie bitte Werfer wählen';const a=seriesOf().get(k)||[];
+    if(!a.includes(w))return 'Serie schon fertig';return a.length<3?'Serie '+a.length+'/3':'Serie fertig: Ø '+spd(avg(a.map(x=>x.v)))+' '+unitTxt();}
+  return '';
+}
+function renderCH(){
+  const show=cfg.fCh&&CH;$('chPanel').style.display=show?'block':'none';
+  $('teamBtn').style.display=show&&CH.type==='team'?'':'none';
+  if(!show)return;
+  const N=+cfg.nTop;let h='';
+  if(CH.type==='ziel'){
+    const m=new Map();let hit=0,all=0;
+    for(const w of chThrows()){all++;const ok=w.v*3.6>=CH.target;if(ok)hit++;const k=keyOf(w);if(!k)continue;const e=m.get(k)||{w,h:0,n:0};e.n++;if(ok)e.h++;m.set(k,e);}
+    const l=[...m.values()].filter(e=>e.h>0).sort((a,b)=>b.h-a.h||a.n-b.n).slice(0,N);
+    h=`<h5>🎯 Ziel ${fmt(CH.target,0)} km/h</h5><div class="cr"><span>Treffer gesamt</span><b>${hit} / ${all}</b></div>`+
+      l.map(e=>`<div class="cr"><span>${esc(nameOf(e.w))}</span><b>${e.h}×</b></div>`).join('');
+  }else if(CH.type==='team'){
+    const st=teamStats();
+    h=`<h5>🎯 Teamduell · Ø Geschwindigkeit</h5><div class="teams">`+['A','B'].map((t,i)=>`<div class="tm${CH.cur===t?' on':''}">${esc(CH.t[i])}<big>${st[t].length?spd(avg(st[t])):'–'}</big><span class="muted">${st[t].length} Würfe</span></div>`).join('')+'</div>';
+  }else{
+    const done=[...seriesOf().values()].filter(a=>a.length===3).map(a=>({w:a[0],v:avg(a.map(x=>x.v))})).sort((a,b)=>b.v-a.v).slice(0,N);
+    const ck=curP?(curP.pid?'p:'+curP.pid:'g:'+curP.name.trim().toLowerCase()):null,ca=ck&&seriesOf().get(ck);
+    h=`<h5>🎯 3er-Serie · Top ${N}</h5>`+(ca&&ca.length<3?`<div class="cr"><span>${esc(curP.name)}</span><b>${ca.length}/3</b></div>`:'')+
+      (done.length?done.map((e,i)=>`<div class="cr"><span>${i+1}. ${esc(nameOf(e.w))}</span><b>Ø ${spd(e.v)}</b></div>`).join(''):'<div class="muted">Noch keine fertige Serie.</div>');
+  }
+  $('chPanel').innerHTML=h;
+  if(CH.type==='team')$('teamBtn').textContent='⚑ '+(CH.t[CH.cur==='A'?0:1]||'Team');
+}
+$('teamBtn').addEventListener('click',()=>{if(!CH)return;CH.cur=CH.cur==='A'?'B':'A';saveCH();renderCH();});
+let chSel='ziel';
+const CH_HINT={ziel:'Wer schafft den Zielwert? Gezählt werden Treffer – angezeigt werden nur die Besten.',
+  team:'Zwei Teams werfen abwechselnd. Es zählt die Durchschnittsgeschwindigkeit, so ist es fair bei ungleich vielen Würfen.',
+  serie:'Jeder hat 3 Würfe, gewertet wird der Durchschnitt. Werfer über „Wer wirft?“ wählen.'};
+function openCH(){
+  chSel=CH?CH.type:'ziel';
+  $('chTarget').value=CH&&CH.target?CH.target:50;$('chT1').value=CH&&CH.t?CH.t[0]:'Team Rot';$('chT2').value=CH&&CH.t?CH.t[1]:'Team Schwarz';
+  $('chAlt').checked=CH?!!CH.alt:true;$('chEnd').style.display=CH?'':'none';$('chGo').textContent=CH?'Neu starten':'Starten';
+  markCH();$('chSheet').classList.add('open');
+}
+function markCH(){document.querySelectorAll('#chType [data-ct]').forEach(b=>b.classList.toggle('on',b.dataset.ct===chSel));
+  $('chHint').textContent=CH_HINT[chSel];$('chZiel').style.display=chSel==='ziel'?'':'none';$('chTeam').style.display=chSel==='team'?'':'none';}
+$('chType').addEventListener('click',e=>{const b=e.target.closest('[data-ct]');if(b){chSel=b.dataset.ct;markCH();}});
+$('chGo').addEventListener('click',()=>{
+  if(chSel==='serie'&&!cfg.fWho){cfg.fWho=true;saveCfg();applyFeatures();}
+  CH={id:uid(),type:chSel,target:Math.max(5,+$('chTarget').value||50),t:[$('chT1').value.trim()||'Team 1',$('chT2').value.trim()||'Team 2'],cur:'A',alt:$('chAlt').checked};
+  saveCH();$('chSheet').classList.remove('open');renderCH();
+});
+$('chEnd').addEventListener('click',()=>{if(!confirm('Challenge beenden? Die Würfe bleiben gespeichert.'))return;CH=null;saveCH();$('chSheet').classList.remove('open');renderCH();});
+$('chCancel').addEventListener('click',()=>$('chSheet').classList.remove('open'));
+$('chBtn').addEventListener('click',openCH);
 
 /* ---------- Overlay / Einrichten ---------- */
 let edit=false,drag=null;
@@ -488,13 +694,17 @@ ov.addEventListener('pointerup',()=>{if(!drag)return;const band=drag==='bt'||dra
 /* ---------- Einstellungen ---------- */
 const fields={iS:'S',iD:'D',iF:'fov',iH:'hold',iT:'thr',iHS:'hsHold',iB:'ball'};
 const sels={iU:'unit',iR:'nRecent',iN:'nTop',iSc:'scope'};
-const feats=['fWho','fRecent','fHS'];
+const feats=['fWho','fRecent','fHS','fArt','fSlow','fSlowAuto','fVoice','fCh'];
 function applyFeatures(){
   $('who').style.display=cfg.fWho?'':'none';$('hsBtn').style.display=cfg.fHS?'':'none';
+  $('artBtn').style.display=$('handBtn').style.display=cfg.fArt?'':'none';$('chBtn').style.display=cfg.fCh?'':'none';
+  if(!cfg.fSlow){$('slowBtn').style.display='none';}
+  renderArt();renderCH();
   if(!cfg.fHS)hideHS();renderRecent();
   if((cfg.fWho||cfg.fHS)&&!Cloud.user())Cloud.requireLogin(()=>loadData(),{title:'Wurfmessung',back:'../',logo:'../logo_mtv_schwarmstedt.jpg'});
 }
-feats.forEach(f=>$(f).addEventListener('change',()=>{cfg[f]=$(f).checked;saveCfg();applyFeatures();}));
+feats.forEach(f=>$(f).addEventListener('change',()=>{cfg[f]=$(f).checked;saveCfg();applyFeatures();
+  if(f==='fVoice'&&cfg.fVoice){unlockVoice();say('Ansage ist an');}}));
 function fillPanel(){feats.forEach(f=>$(f).checked=!!cfg[f]);$('iDg').checked=!!cfg.diag;for(const id in fields)$(id).value=cfg[fields[id]];for(const id in sels)$(id).value=String(cfg[sels[id]]);dminHint();}
 function dminHint(){const dmin=(cfg.S/2)*1.15/Math.tan(cfg.fov*Math.PI/360);
   $('dminHint').textContent='Damit beide Stangen gut im Bild sind, braucht das iPad bei diesem Kamerawinkel mindestens ca. '+fmt(dmin,1)+' m Entfernung.';}
