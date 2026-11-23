@@ -79,6 +79,7 @@ input{-webkit-user-select:text;user-select:text}
 .fb .o{border-left:1px solid #fff4;padding:9px 10px;display:none}
 .fb.on{background:var(--red);border-color:var(--red2)}.fb.on .o{display:block;border-color:#fff6}
 .fb.on button{font-weight:700}
+#editBar{position:fixed;left:0;right:0;bottom:0;z-index:4;display:none;gap:8px;justify-content:center;flex-wrap:wrap;padding:10px 12px;padding-bottom:max(10px,env(safe-area-inset-bottom));background:#000d}
 #pop{position:fixed;left:50%;bottom:calc(70px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:5;background:#16181d;border:1px solid var(--line);border-top:4px solid var(--red);border-radius:16px;padding:14px 16px;min-width:300px;max-width:94vw;display:none}
 #pop h4{margin:0 0 8px;font-size:18px}
 #pop .pr{display:flex;align-items:center;gap:8px;margin:8px 0;flex-wrap:wrap}
@@ -137,6 +138,12 @@ input{-webkit-user-select:text;user-select:text}
 
 <div id="recent"></div>
 <div id="fbar"></div>
+<div id="editBar">
+  <button class="btn" data-eb="L">🚫 Links von L sperren</button>
+  <button class="btn" data-eb="R">🚫 Rechts von R sperren</button>
+  <button class="btn" data-eb="add">＋ Sperrzone</button>
+  <button class="btn pri" data-eb="done">✓ Fertig</button>
+</div>
 <div id="pop"></div>
 <div id="msgToast" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;background:#000d;border:2px solid var(--gold);border-radius:14px;padding:14px 20px;font-size:20px;display:none;max-width:80vw;text-align:center"></div>
 <div id="chPanel"></div>
@@ -210,6 +217,7 @@ input{-webkit-user-select:text;user-select:text}
     <li>iPad quer, Rückkamera zeigt zu den Stangen, <b>mittig</b> zwischen beiden Stangen und im rechten Winkel zur Wurfbahn.</li>
     <li>Kamera etwa auf Höhe der Wurfbahn (Stativ oder Kasten, ca. 1–1,5 m). Der Ball fliegt <b>direkt über den Stangen</b> – nicht davor oder dahinter.</li>
     <li>Werfer steht links außerhalb des Bereichs zwischen den Stangen, niemand läuft durchs Bild. Mit „🎥 Wurfbewegung“: Werfer so stellen, dass er noch im Kamerabild ist (links neben der linken Stange).</li>
+    <li>Unter ✎ Einrichten die Anlaufzone sperren („Links von L sperren“ oder eine Sperrzone ziehen): Dort wird nicht gemessen, aber für die Zeitlupe weiter gefilmt. iPad stabil aufstellen (Stativ auf Matte), damit Bodenerschütterungen wenig stören.</li>
     <li>Ruhiger Hintergrund (Wand, Matte) und gleichmäßiges Hallenlicht machen die Erkennung sicherer.</li>
     <li>In der App mit ✎ die orangen Linien auf die Stangen ziehen und das blaue Band auf die Flughöhe legen.</li>
   </ul>
@@ -230,44 +238,13 @@ input{-webkit-user-select:text;user-select:text}
   <label>Anzeigedauer Ergebnis (s)<input id="iH" type="number" step="0.5" min="1"></label>
   <label>Empfindlichkeit (Schwelle)<input id="iT" type="number" step="1" min="5" max="80"></label>
   <div class="hint">Kleinere Schwelle = empfindlicher. Wenn ohne Ball schon gemessen wird, höher stellen.</div>
+  <label>Höchstwert (km/h)<input id="iV" type="number" step="5" min="30" max="200"></label>
+  <div class="hint">Schnellere Messungen gelten als Fehlmessung und werden nicht gespeichert (in der Staffel wirft derselbe Spieler nochmal).</div>
   <label>Balldurchmesser (cm)<input id="iB" type="number" step="0.5" min="2" max="30"></label>
   <div class="hint">Handball Größe 1 (D-Jugend): ca. 16 cm, Größe 2 (C-Jugend): ca. 17,5 cm · Tischtennisball: 4 cm (zum Testen).</div>
   <label>Erkennung anzeigen<input id="iDg" type="checkbox" class="cb"></label>
   <div class="hint">Rot = Bewegung, grüner Kreis = erkannter Ball, blaue Punkte = letzte Flugbahn. Grund für „ungültig“ steht im Ergebnisfeld.</div>
   <label>Große Einheit<select id="iU"><option value="kmh">km/h</option><option value="ms">m/s</option></select></label>
-  <h4>Aufbau</h4>
-  <label>Abstand der Stangen (m)<input id="iS" type="number" step="0.1" min="0.5"></label>
-  <label>Entfernung iPad → Stangen (m)<input id="iD" type="number" step="0.1" min="0.5"></label>
-  <label>Kamerawinkel horizontal (°)<input id="iF" type="number" step="0.5" min="20" max="120"></label>
-  <div class="hint" id="dminHint"></div>
-  <button class="btn full" id="bGeo">Stangen-Linien aus Maßen setzen</button>
-  <button class="btn full" id="bFov">Kamerawinkel aus Stangen-Linien berechnen</button>
-  <div class="hint">Am genauesten: Mit ✎ die orangen Linien im Livebild auf die Stangen ziehen, dann den zweiten Knopf drücken. Der Kamerawinkel bleibt für spätere Aufbauten gespeichert.</div>
-  <h4>Messung</h4>
-  <label>Anzeigedauer Ergebnis (s)<input id="iH" type="number" step="0.5" min="1"></label>
-  <label>Empfindlichkeit (Schwelle)<input id="iT" type="number" step="1" min="5" max="80"></label>
-  <div class="hint">Kleinere Schwelle = empfindlicher. Wenn ohne Ball schon gemessen wird, höher stellen.</div>
-  <label>Balldurchmesser (cm)<input id="iB" type="number" step="0.5" min="2" max="30"></label>
-  <div class="hint">Handball Größe 1 (D-Jugend): ca. 16 cm, Größe 2 (C-Jugend): ca. 17,5 cm · Tischtennisball: 4 cm (zum Testen).</div>
-  <label>Erkennung anzeigen<input id="iDg" type="checkbox" class="cb"></label>
-  <div class="hint">Rot = Bewegung, grüner Kreis = erkannter Ball, blaue Punkte = letzte Flugbahn. Grund für „ungültig“ steht im Ergebnisfeld.</div>
-  <label>Große Einheit<select id="iU"><option value="kmh">km/h</option><option value="ms">m/s</option></select></label>
-  <h4>Zusatzfunktionen</h4>
-  <div class="hint">Ohne Häkchen: nur messen und Geschwindigkeit anzeigen.</div>
-  <label>👤 Wer wirft? (Namen)<input id="fWho" type="checkbox" class="cb"></label>
-  <label>Letzte Würfe anzeigen<input id="fRecent" type="checkbox" class="cb"></label>
-  <label>&nbsp;&nbsp;Anzahl<select id="iR"><option>3</option><option>5</option><option>10</option></select></label>
-  <label>🏆 Bestenliste &amp; Platz<input id="fHS" type="checkbox" class="cb"></label>
-  <label>🤾 Wurfart &amp; Hand (inkl. Pass)<input id="fArt" type="checkbox" class="cb"></label>
-  <label>▶ Zeitlupe nach dem Wurf<input id="fSlow" type="checkbox" class="cb"></label>
-  <label>&nbsp;&nbsp;automatisch abspielen<input id="fSlowAuto" type="checkbox" class="cb"></label>
-  <label>🔊 Ansage<input id="fVoice" type="checkbox" class="cb"></label>
-  <label>🎯 Challenge<input id="fCh" type="checkbox" class="cb"></label>
-  <div class="hint">Namen und Bestenliste brauchen die Anmeldung (Kader &amp; Speicherung in der Cloud).</div>
-  <label>Bestenliste: Top<select id="iN"><option>3</option><option>5</option><option>10</option></select></label>
-  <label>Bestenliste zeigen (s)<input id="iHS" type="number" step="1" min="0"></label>
-  <label>Zeitraum<select id="iSc"><option value="heute">Heute</option><option value="gesamt">Gesamt</option></select></label>
-  <div class="hint">Die Bestenliste zeigt pro Spieler nur den besten Wurf und nur die Top-Plätze. Den eigenen Platz gibt es nur, wenn er in den Top-Plätzen liegt, sonst „Neue Bestleistung“.</div>
   <h4>Aufbau</h4>
   <button class="btn full" id="bSketch">📐 Aufbau-Skizze anzeigen</button>
   <button class="btn full" id="bLearn">Hintergrund neu lernen</button>
@@ -295,7 +272,7 @@ const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const vid=$('vid'), ov=$('ov'), octx=ov.getContext('2d');
 
 /* ---------- Geräte-Einstellungen (lokal) ---------- */
-const DEF={S:5,D:6,fov:60,hold:5,thr:25,unit:'kmh',L:null,R:null,bt:0.25,bb:0.70,ball:17,diag:false,nRecent:5,nTop:5,fWho:false,fRecent:false,fHS:false,fArt:false,fSlow:false,fSlowAuto:false,fVoice:false,fCh:false,fMove:false,fRelay:false,hsHold:6,scope:'heute'};
+const DEF={S:3,D:4,vmax:100,zones:[],blockL:false,blockR:false,fov:60,hold:5,thr:25,unit:'kmh',L:null,R:null,bt:0.25,bb:0.70,ball:17,diag:false,nRecent:5,nTop:5,fWho:false,fRecent:false,fHS:false,fArt:false,fSlow:false,fSlowAuto:false,fVoice:false,fCh:false,fMove:false,fRelay:false,hsHold:6,scope:'heute'};
 let cfg=Object.assign({},DEF);
 try{Object.assign(cfg,JSON.parse(localStorage.getItem('mtv_wurf_cfg')||'{}'))}catch(e){}
 function saveCfg(){try{localStorage.setItem('mtv_wurf_cfg',JSON.stringify(cfg))}catch(e){}}
@@ -415,7 +392,7 @@ $('startBtn').addEventListener('click',async()=>{
 /* ---------- Bildverarbeitung ---------- */
 const pc=document.createElement('canvas');let pctx,PW=320,PH=180,bg,cols,colsY;
 const mc=document.createElement('canvas'),mctx=mc.getContext('2d');let mImg=null,mY0=0,mH=0;
-let state='learn',learnN=0,samples=[],lastSamples=[],miss=0,until=0,quiet=0,waitN=0,blobX=null,blobY=null,lastT=0,fpsAvg=0,pendingHS=null,failTxt='';
+let state='learn',learnN=0,samples=[],lastSamples=[],miss=0,until=0,quiet=0,waitN=0,blobX=null,blobY=null,lastT=0,fpsAvg=0,pendingHS=null,failTxt='',shakeN=0;
 function setupProc(){
   PW=320;PH=Math.round(PW*vid.videoHeight/vid.videoWidth)||180;
   pc.width=PW;pc.height=PH;pctx=pc.getContext('2d',{willReadFrequently:true});
@@ -433,40 +410,76 @@ function backToReady(){
   const wasShow=state==='show';state='ready';$('result').style.display='none';setStatus();
   if(wasShow&&cfg.fHS&&+cfg.hsHold>0)showHS(pendingHS,+cfg.hsHold);
 }
+const SH=4;let G=null,zmask=null,zKey='',colMin=null,colMax=null;
+function buildMask(){
+  const key=JSON.stringify([cfg.zones,PW,PH]);if(zmask&&key===zKey)return;zKey=key;zmask=new Uint8Array(PW*PH);
+  for(const z of cfg.zones||[]){const x0=Math.max(0,Math.floor(Math.min(z.x0,z.x1)*PW)),x1=Math.min(PW,Math.ceil(Math.max(z.x0,z.x1)*PW)),
+    y0=Math.max(0,Math.floor(Math.min(z.y0,z.y1)*PH)),y1=Math.min(PH,Math.ceil(Math.max(z.y0,z.y1)*PH));
+    for(let y=y0;y<y1;y++)zmask.fill(1,y*PW+x0,y*PW+x1);}
+}
 function process(t){
   if(!pctx||!vid.videoWidth||edit||replaying)return;   // beim Einrichten / in der Zeitlupe nicht messen
   const y0=Math.max(0,Math.floor(Math.min(cfg.bt,cfg.bb)*PH)),y1=Math.min(PH,Math.ceil(Math.max(cfg.bt,cfg.bb)*PH)),h=y1-y0;
   if(h<2)return;
+  const ya=Math.max(0,y0-SH),yb=Math.min(PH,y1+SH),hh=yb-ya;
   pctx.drawImage(vid,0,0,PW,PH);
-  const d=pctx.getImageData(0,y0,PW,h).data;
+  const d=pctx.getImageData(0,ya,PW,hh).data;
+  if(!G||G.length!==PW*PH){G=new Float32Array(PW*PH);colMin=new Int16Array(PW);colMax=new Int16Array(PW);}
+  for(let y=ya;y<yb;y++)for(let x=0;x<PW;x++){const p=((y-ya)*PW+x)*4;G[y*PW+x]=0.299*d[p]+0.587*d[p+1]+0.114*d[p+2];}
+  buildMask();
   const Lx=Math.min(cfg.L,cfg.R)*PW,Rx=Math.max(cfg.L,cfg.R)*PW,m=0.15*(Rx-Lx);
-  const xa=Math.max(0,Math.floor(Lx-m)),xb=Math.min(PW,Math.ceil(Rx+m));
+  const xa=cfg.blockL?Math.ceil(Lx)+1:Math.max(0,Math.floor(Lx-m)),xb=cfg.blockR?Math.floor(Rx):Math.min(PW,Math.ceil(Rx+m));
+  if(state==='learn'){
+    for(let k=ya*PW;k<yb*PW;k++)bg[k]=learnN===0?G[k]:bg[k]+(G[k]-bg[k])*0.2;
+    if(++learnN>=20){state='ready';setStatus();}return;
+  }
+  // --- Erschütterung: Verschiebung des Bildes gegenüber dem Hintergrund schätzen (Spalten-/Zeilenprofile)
+  let dx=0,dy=0;
+  {
+    const cp=new Float32Array(PW),bp=new Float32Array(PW);
+    for(let y=y0;y<y1;y++){const o=y*PW;for(let x=0;x<PW;x++){cp[x]+=G[o+x];bp[x]+=bg[o+x];}}
+    const sadX=s=>{let a=0;for(let x=SH;x<PW-SH;x++)a+=Math.abs(cp[x]-bp[x+s]);return a;};
+    let b0=sadX(0),bb=b0;for(let s=-SH;s<=SH;s++){if(!s)continue;const v=sadX(s);if(v<bb){bb=v;dx=s;}}
+    if(bb>0.8*b0)dx=0;
+    const rc=new Float32Array(PH),rb=new Float32Array(PH);
+    for(let y=ya;y<yb;y++){const o=y*PW;for(let x=SH;x<PW-SH;x++){rc[y]+=G[o+x];rb[y]+=bg[o+x+dx];}}
+    const sadY=s=>{let a=0;for(let y=y0;y<y1;y++)a+=Math.abs(rc[y]-rb[y+s]);return a;};
+    b0=sadY(0);bb=b0;for(let s=-SH;s<=SH;s++){if(!s||y0+s<ya||y1+s>yb)continue;const v=sadY(s);if(v<bb){bb=v;dy=s;}}
+    if(bb>0.8*b0)dy=0;
+  }
+  const shaken=!!(dx||dy);
   const diag=!!cfg.diag;
   if(diag&&(!mImg||mImg.width!==PW||mImg.height!==h)){mc.width=PW;mc.height=h;mImg=mctx.createImageData(PW,h);}
   const md=diag?mImg.data:null;mY0=y0;mH=h;
-  cols.fill(0);colsY.fill(0);let fgTot=0;const learning=state==='learn',thr=cfg.thr;
-  for(let y=0;y<h;y++){
+  cols.fill(0);colsY.fill(0);colMin.fill(32767);colMax.fill(-1);let fgTot=0;const thr=cfg.thr;
+  for(let y=y0;y<y1;y++){
     for(let x=0;x<PW;x++){
-      const i=y*PW+x,p=i*4,g=0.299*d[p]+0.587*d[p+1]+0.114*d[p+2],k=(y0+y)*PW+x;
-      if(learning){bg[k]=learnN===0?g:bg[k]+(g-bg[k])*0.2;continue;}
-      const fg=Math.abs(g-bg[k])>thr;
-      if(fg){fgTot++;if(x>=xa&&x<xb){cols[x]++;colsY[x]+=y0+y;}
-        bg[k]+=(g-bg[k])*0.015;}            // Stehengebliebenes wird nach einigen Sekunden Hintergrund
-      else bg[k]+=(g-bg[k])*0.03;
-      if(md){md[p]=255;md[p+1]=40;md[p+2]=60;md[p+3]=fg?170:0;}
+      const k=y*PW+x,xs=Math.min(PW-1,Math.max(0,x+dx)),kb=(y+dy)*PW+xs,g=G[k];
+      const fg=Math.abs(g-bg[kb])>thr,blocked=zmask[k]===1;
+      if(fg){fgTot++;if(!blocked&&x>=xa&&x<xb){cols[x]++;colsY[x]+=y;if(y<colMin[x])colMin[x]=y;if(y>colMax[x])colMax[x]=y;}}
+      if(!shaken)bg[k]+=(g-bg[k])*(fg?0.015:0.03);   // Stehengebliebenes wird nach einigen Sekunden Hintergrund
+      if(md){const p=((y-y0)*PW+x)*4;md[p]=blocked?120:255;md[p+1]=40;md[p+2]=blocked?200:60;md[p+3]=fg?170:(blocked?40:0);}
     }
   }
+  if(!shaken){for(let k=ya*PW;k<y0*PW;k++)bg[k]+=(G[k]-bg[k])*0.03;for(let k=y1*PW;k<yb*PW;k++)bg[k]+=(G[k]-bg[k])*0.03;}
   if(md)mctx.putImageData(mImg,0,0);
-  if(learning){if(++learnN>=20){state='ready';setStatus();}return;}
   if(fgTot>0.35*PW*h){relearn();return;}
+  // Erschütterung, die sich nicht herausrechnen ließ: Bewegung fast überall -> Bild ignorieren
+  let cover=0;for(let x=xa;x<xb;x++)if(cols[x]>0)cover++;
+  if(cover>0.5*Math.max(1,xb-xa)){blobX=null;shakeN++;return;}
+  const ballPx=(cfg.ball||17)/100*fnorm()*PW/cfg.D,minPix=Math.max(3,0.25*ballPx*ballPx);
+  // Ball: genug Pixel, nicht zu breit und vor allem nicht zu hoch (ein anlaufender Spieler ist viel höher als ein Ball)
+  const isBall=c=>c.sum>=minPix&&(c.b-c.a)<=Math.max(8,ballPx*6)&&(c.y1-c.y0)<=Math.max(10,ballPx*3.5);
   let best=null,cur=null,gap=0;
+  const close=()=>{if(cur&&isBall(cur)&&(!best||cur.sum>best.sum))best=cur;cur=null;gap=0;};
   for(let x=xa;x<=xb;x++){
     const c=x<xb?cols[x]:0;
-    if(c>0){if(!cur)cur={a:x,b:x,sum:0,sx:0,sy:0};cur.b=x;cur.sum+=c;cur.sx+=c*x;cur.sy+=colsY[x];gap=0;}
-    else if(cur){if(++gap>2||x===xb){if(!best||cur.sum>best.sum)best=cur;cur=null;gap=0;}}
+    if(c>0){if(!cur)cur={a:x,b:x,sum:0,sx:0,sy:0,y0:32767,y1:-1};cur.b=x;cur.sum+=c;cur.sx+=c*x;cur.sy+=colsY[x];
+      if(colMin[x]<cur.y0)cur.y0=colMin[x];if(colMax[x]>cur.y1)cur.y1=colMax[x];gap=0;}
+    else if(cur){if(++gap>2||x===xb)close();}
   }
-  const ballPx=(cfg.ball||17)/100*fnorm()*PW/cfg.D,minPix=Math.max(3,0.25*ballPx*ballPx);
-  const found=best&&best.sum>=minPix&&(best.b-best.a)<=Math.max(8,ballPx*8);
+  close();
+  const found=!!best;
   blobX=found?best.sx/best.sum:null;blobY=found?best.sy/best.sum:null;
 
   if(state==='ready'){if(found){if(postN>0)freezeClip();state='track';samples=[{t,x:blobX,y:blobY}];miss=0;hideHS();setStatus();}}
@@ -506,7 +519,8 @@ function evaluate(){
   if(!(dt>0))return fail('Zeitstempel fehlerhaft');
   const mpp=cfg.S/span, dy=(B.y-A.y)*mpp;                 // Höhenunterschied (Bogen) in m
   const v=Math.sqrt(cfg.S*cfg.S+dy*dy)/dt,kmh=v*3.6;
-  if(kmh<1||kmh>200)return fail('Unplausibler Wert ('+fmt(kmh,0)+' km/h)');
+  if(kmh<1)return fail('Unplausibler Wert ('+fmt(kmh,1)+' km/h)');
+  if(kmh>(+cfg.vmax||100))return fail('Über dem Höchstwert ('+fmt(kmh,0)+' km/h) – wahrscheinlich Fehlmessung');
   const n=s.filter(p=>p.t>=A.t-1&&p.t<=B.t+1).length;
   showResult(v,dt,n);
 }
@@ -777,6 +791,7 @@ function draw(){
     for(const y of [bt,bb]){octx.beginPath();octx.moveTo(r.x,y);octx.lineTo(r.x+r.w,y);octx.stroke();}
     octx.strokeStyle='#ff9d1a';octx.lineWidth=2;octx.fillStyle='#ff9d1a';octx.font='bold 20px system-ui';
     for(const k of ['L','R']){const x=r.x+cfg[k]*r.w;octx.beginPath();octx.moveTo(x,r.y);octx.lineTo(x,r.y+r.h);octx.stroke();octx.fillText(k,x+6,r.y+r.h-14);}
+    drawZones(r,false);
   }else drawEdit(r,bt,bb);
   octx.fillStyle='#4da3ff';
   if(cfg.diag&&mH){octx.imageSmoothingEnabled=false;octx.drawImage(mc,r.x,r.y+mY0/PH*r.h,r.w,mH/PH*r.h);}
@@ -813,22 +828,59 @@ function drawEdit(r,bt,bb){
     octx.beginPath();octx.moveTo(x,r.y);octx.lineTo(x,r.y+r.h);octx.stroke();octx.setLineDash([]);
     for(const gy of [r.y+r.h*0.15,r.y+r.h*0.85])grip(x,gy,'#ff9d1a',false,act);
     pill(x,r.y+r.h*0.15+48,'Stange '+k,'#ff9d1a');}
-  pill(r.x+r.w/2,r.y+26,'✎ Einrichten: Griffe ziehen · zum Beenden ✎ erneut tippen','#000c','#fff');
+  drawZones(r,true);
+  pill(r.x+r.w/2,r.y+26,'✎ Einrichten: Griffe ziehen · Sperrzonen unten anlegen','#000c','#fff');
 }
-$('editBtn').addEventListener('click',()=>{edit=!edit;$('editBtn').classList.toggle('on',edit);blobX=null;
-  if(edit){$('result').style.display='none';hideHS();$('status').textContent='EINRICHTEN';$('status').className='';}else if(pctx)relearn();});
+function hatch(x,y,w,h){octx.save();octx.beginPath();octx.rect(x,y,w,h);octx.clip();octx.fillStyle='rgba(208,21,43,0.28)';octx.fillRect(x,y,w,h);
+  octx.strokeStyle='rgba(255,80,100,0.55)';octx.lineWidth=2;for(let i=-h;i<w;i+=18){octx.beginPath();octx.moveTo(x+i,y+h);octx.lineTo(x+i+h,y);octx.stroke();}octx.restore();}
+function zoneRect(r,z){const x0=r.x+Math.min(z.x0,z.x1)*r.w,y0=r.y+Math.min(z.y0,z.y1)*r.h;return {x:x0,y:y0,w:Math.abs(z.x1-z.x0)*r.w,h:Math.abs(z.y1-z.y0)*r.h};}
+function drawZones(r,full){
+  const Lp=r.x+Math.min(cfg.L,cfg.R)*r.w,Rp=r.x+Math.max(cfg.L,cfg.R)*r.w;
+  if(cfg.blockL){hatch(r.x,r.y,Lp-r.x,r.h);if(full)pill((r.x+Lp)/2,r.y+r.h*0.5,'gesperrt','#d0152b','#fff');}
+  if(cfg.blockR){hatch(Rp,r.y,r.x+r.w-Rp,r.h);if(full)pill((Rp+r.x+r.w)/2,r.y+r.h*0.5,'gesperrt','#d0152b','#fff');}
+  (cfg.zones||[]).forEach(z=>{const q=zoneRect(r,z);hatch(q.x,q.y,q.w,q.h);
+    octx.strokeStyle='#ff3347';octx.lineWidth=full?3:1.5;octx.strokeRect(q.x,q.y,q.w,q.h);
+    if(full){pill(q.x+q.w/2,q.y+q.h/2,'Sperrzone','#d0152b','#fff');
+      grip(q.x+q.w,q.y+q.h,'#ff3347',false,false);
+      octx.fillStyle='#000';octx.beginPath();octx.arc(q.x+q.w,q.y,18,0,7);octx.fill();octx.strokeStyle='#fff';octx.lineWidth=2;octx.stroke();
+      octx.fillStyle='#fff';octx.font='bold 20px system-ui';octx.textAlign='center';octx.textBaseline='middle';octx.fillText('✕',q.x+q.w,q.y+1);octx.textAlign='start';octx.textBaseline='alphabetic';}});
+}
+function setEdit(on){edit=on;$('editBtn').classList.toggle('on',edit);blobX=null;
+  $('editBar').style.display=edit?'flex':'none';$('fbar').style.display=edit?'none':'';
+  ['recent','chPanel'].forEach(id=>$(id).style.visibility=edit?'hidden':'');if(edit)$('rlBox').style.display='none';else renderRL();renderEditBar();closePop();
+  if(edit){$('result').style.display='none';hideHS();$('status').textContent='EINRICHTEN';$('status').className='';}else if(pctx)relearn();}
+$('editBtn').addEventListener('click',()=>setEdit(!edit));
+function renderEditBar(){document.querySelectorAll('#editBar [data-eb]').forEach(b=>{const k=b.dataset.eb;if(k==='L'||k==='R')b.classList.toggle('on',!!cfg['block'+k]);});}
+$('editBar').addEventListener('click',e=>{const b=e.target.closest('[data-eb]');if(!b)return;const k=b.dataset.eb;
+  if(k==='L'||k==='R'){cfg['block'+k]=!cfg['block'+k];}
+  else if(k==='add'){const Lf=Math.min(cfg.L,cfg.R);cfg.zones=(cfg.zones||[]).concat([{x0:Math.max(0.02,Lf-0.22),x1:Math.max(0.1,Lf-0.04),y0:0.2,y1:0.8}]);}
+  else if(k==='done'){setEdit(false);return;}
+  saveCfg();renderEditBar();});
+let dz=null;
 ov.addEventListener('pointerdown',e=>{
   if(!edit)return;const r=vrect();
+  const zs=cfg.zones||[];
+  for(let i=zs.length-1;i>=0;i--){const q=zoneRect(r,zs[i]);
+    if(Math.hypot(e.clientX-(q.x+q.w),e.clientY-q.y)<26){zs.splice(i,1);saveCfg();return;}
+    if(Math.hypot(e.clientX-(q.x+q.w),e.clientY-(q.y+q.h))<36){dz={i,mode:'rs'};ov.setPointerCapture(e.pointerId);return;}
+    if(e.clientX>q.x&&e.clientX<q.x+q.w&&e.clientY>q.y&&e.clientY<q.y+q.h&&Math.abs(e.clientX-(r.x+cfg.L*r.w))>30&&Math.abs(e.clientX-(r.x+cfg.R*r.w))>30){
+      dz={i,mode:'mv',fx:(e.clientX-r.x)/r.w,fy:(e.clientY-r.y)/r.h,z:Object.assign({},zs[i])};ov.setPointerCapture(e.pointerId);return;}}
   const c=[['L',Math.abs(e.clientX-(r.x+cfg.L*r.w))],['R',Math.abs(e.clientX-(r.x+cfg.R*r.w))],
            ['bt',Math.abs(e.clientY-(r.y+cfg.bt*r.h))],['bb',Math.abs(e.clientY-(r.y+cfg.bb*r.h))]].sort((a,b)=>a[1]-b[1]);
   if(c[0][1]<60){drag=c[0][0];ov.setPointerCapture(e.pointerId);}
 });
-ov.addEventListener('pointermove',e=>{if(!drag)return;const r=vrect(),cl=v=>Math.min(1,Math.max(0,v));
+ov.addEventListener('pointermove',e=>{
+  if(dz){const r=vrect(),cl=v=>Math.min(1,Math.max(0,v)),z=cfg.zones[dz.i],fx=(e.clientX-r.x)/r.w,fy=(e.clientY-r.y)/r.h;if(!z)return;
+    if(dz.mode==='rs'){z.x0=Math.min(z.x0,z.x1);z.y0=Math.min(z.y0,z.y1);z.x1=cl(Math.max(z.x0+0.03,fx));z.y1=cl(Math.max(z.y0+0.03,fy));}
+    else{const o=dz.z,w=Math.abs(o.x1-o.x0),h=Math.abs(o.y1-o.y0);let nx=Math.min(o.x0,o.x1)+fx-dz.fx,ny=Math.min(o.y0,o.y1)+fy-dz.fy;
+      nx=Math.min(1-w,Math.max(0,nx));ny=Math.min(1-h,Math.max(0,ny));z.x0=nx;z.x1=nx+w;z.y0=ny;z.y1=ny+h;}
+    return;}
+  if(!drag)return;const r=vrect(),cl=v=>Math.min(1,Math.max(0,v));
   if(drag==='L'||drag==='R')cfg[drag]=cl((e.clientX-r.x)/r.w);else cfg[drag]=cl((e.clientY-r.y)/r.h);});
-ov.addEventListener('pointerup',()=>{if(!drag)return;const band=drag==='bt'||drag==='bb';drag=null;saveCfg();if(band&&pctx)relearn();});
+ov.addEventListener('pointerup',()=>{if(dz){dz=null;saveCfg();return;}if(!drag)return;const band=drag==='bt'||drag==='bb';drag=null;saveCfg();if(band&&pctx)relearn();});
 
 /* ---------- Einstellungen ---------- */
-const fields={iS:'S',iD:'D',iF:'fov',iH:'hold',iT:'thr',iB:'ball'};
+const fields={iS:'S',iD:'D',iF:'fov',iH:'hold',iT:'thr',iB:'ball',iV:'vmax'};
 const sels={iU:'unit'};
 const FEATS=[
   {k:'fWho',l:'👤 Namen'},{k:'fRecent',l:'📋 Letzte',o:'recent'},{k:'fHS',l:'🏆 Bestenliste',o:'hs'},

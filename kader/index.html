@@ -297,6 +297,7 @@ tr[data-gsel]{cursor:pointer}
     <label style="display:inline-flex;gap:8px;align-items:center;margin-top:4px"><input type="checkbox" id="wf-avg" checked> Mannschaftsschnitt des Tages einblenden</label>
     <div id="wf-chart" style="margin-top:10px"></div>
     <div id="wf-tab"></div>
+    <div id="wf-list" style="margin-top:18px"></div>
   </div>
 </section>
 
@@ -409,7 +410,8 @@ function render(){({kader:renderKader,auf:renderAuf,plan:renderPlan,bew:renderBe
 /* ---------- Würfe: Verlauf mehrerer Spieler + Mannschaftsschnitt ---------- */
 const WF_PAL=['#ff8a00','#3ec1ff','#5dd39e','#ffd166','#c77dff','#ff5d8f','#4dd4c6','#f4a261','#90be6d','#a0c4ff','#e76f51','#b5e48c','#ffadad','#9bf6ff'];
 const WF_ART=[['alle','Alle Würfe'],['stand','Standwurf'],['sprung','Sprungwurf'],['schlag','Schlagwurf'],['pass','Pass']];
-let wfArt='alle',wfSel=null;
+let wfArt='alle',wfSel=null,wfDay=null;
+const WF_MAX=100;   // km/h – darüber als vermutliche Fehlmessung markieren
 function renderWurf(){
   const pl=byNr(),col=id=>WF_PAL[Math.max(0,pl.findIndex(p=>p.id===id))%WF_PAL.length];
   const ws=(WURF&&Array.isArray(WURF.wuerfe)?WURF.wuerfe:[]).filter(w=>w.pid&&(wfArt==='alle'?w.art!=='pass':w.art===wfArt));
@@ -426,6 +428,7 @@ function renderWurf(){
   const lines=[...wfSel].filter(id=>best[id]).map(id=>({c:col(id),pts:days.map((d,i)=>best[id][d]?[i,best[id][d]]:null).filter(Boolean)}));
   if(showAvg)lines.push({c:'#ffffff',dash:true,pts:days.map((d,i)=>{const v=avgDay(d);return v?[i,v]:null;}).filter(Boolean)});
   const vals=lines.flatMap(l=>l.pts.map(q=>q[1]));
+  renderWurfList();
   if(!days.length||!vals.length){$('#wf-chart').innerHTML='';$('#wf-tab').innerHTML='';return;}
   const lo=Math.max(0,Math.floor(Math.min(...vals)/10)*10-10),hi=Math.ceil(Math.max(...vals)/10)*10+5;
   const Wd=900,Hd=360,L=46,R=16,T=18,B=40,X=i=>days.length<2?L+(Wd-L-R)/2:L+i*(Wd-L-R)/(days.length-1),Y=v=>T+(hi-v)*(Hd-T-B)/(hi-lo||1);
@@ -442,6 +445,39 @@ function renderWurf(){
     withData.map(p=>{const b=best[p.id],ds=Object.keys(b).sort(),n=ws.filter(w=>w.pid===p.id).length;
       return `<tr style="border-top:1px solid var(--line)"><td style="padding:6px 0"><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${col(p.id)};margin-right:6px"></i>${esc(lbl(p))}</td><td style="text-align:right">${k1(Math.max(...Object.values(b)))}</td><td style="text-align:right">${k1(b[ds[ds.length-1]])}</td><td style="text-align:right">${n}</td></tr>`;}).join('')+'</table>';
 }
+/* Einzelne Würfe eines Tages korrigieren: löschen, Spieler oder Wurfart ändern */
+function renderWurfList(){
+  const all=WURF&&Array.isArray(WURF.wuerfe)?WURF.wuerfe:[];
+  const days=[...new Set(all.map(w=>w.ts.slice(0,10)))].sort().reverse();
+  if(!days.length){$('#wf-list').innerHTML='';return;}
+  if(!wfDay||!days.includes(wfDay))wfDay=days[0];
+  const ws=all.filter(w=>w.ts.slice(0,10)===wfDay).sort((a,b)=>a.ts<b.ts?-1:1);
+  const bad=all.filter(w=>w.v*3.6>WF_MAX).length,k1=v=>v.toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1});
+  const pls=byNr(),fd=d=>d.slice(8,10)+'.'+d.slice(5,7)+'.'+d.slice(0,4);
+  $('#wf-list').innerHTML=`<h2>Einzelne Würfe korrigieren</h2>
+    <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><select id="wf-day">${days.map(d=>`<option value="${d}"${d===wfDay?' selected':''}>${fd(d)} (${all.filter(w=>w.ts.slice(0,10)===d).length})</option>`).join('')}</select>
+    ${bad?`<button class="btn del" id="wf-delbad">Alle über ${WF_MAX} km/h löschen (${bad})</button>`:''}</div>
+    <table style="width:100%;border-collapse:collapse;margin-top:8px;font-size:15px">${ws.map(w=>{const hi=w.v*3.6>WF_MAX;
+      return `<tr style="border-top:1px solid var(--line)${hi?';background:#d0152b33':''}">
+      <td style="padding:5px 4px;color:var(--muted)">${new Date(w.ts).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}</td>
+      <td><select data-wfpid="${w.id}"><option value="">${w.pid?'– ohne Spieler –':esc(w.name||'– ohne Namen –')}</option>${pls.map(p=>`<option value="${p.id}"${p.id===w.pid?' selected':''}>${esc(lbl(p))}</option>`).join('')}</select></td>
+      <td><select data-wfart="${w.id}"><option value="">–</option>${WF_ART.slice(1).map(a=>`<option value="${a[0]}"${a[0]===w.art?' selected':''}>${a[1]}</option>`).join('')}</select></td>
+      <td style="text-align:right;font-weight:700${hi?';color:#ff8a8a':''}">${k1(w.v*3.6)} km/h</td>
+      <td style="text-align:right"><button class="btn sm del" data-wfdel="${w.id}">✕</button></td></tr>`;}).join('')}</table>
+    <div class="muted" style="margin-top:6px">Rot = über ${WF_MAX} km/h, vermutlich Fehlmessung.</div>`;
+}
+async function wfEdit(fn){await loadWurf();if(!WURF||!Array.isArray(WURF.wuerfe))return;fn(WURF);Cloud.save('wurf',WURF);renderWurf();}
+document.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.id==='wf-day'){wfDay=t.value;renderWurfList();return;}
+  if(t.dataset.wfpid!==undefined){const id=t.dataset.wfpid,v=t.value;wfEdit(W=>{const w=W.wuerfe.find(x=>x.id===id);if(!w)return;
+    if(v){const p=P(v);w.pid=v;w.name=p?p.name:'';}else{w.pid=null;}});toast('Wurf geändert');}
+  if(t.dataset.wfart!==undefined){const id=t.dataset.wfart,v=t.value;wfEdit(W=>{const w=W.wuerfe.find(x=>x.id===id);if(!w)return;if(v)w.art=v;else delete w.art;});toast('Wurfart geändert');}
+});
+document.addEventListener('click',e=>{
+  const d=e.target.closest('[data-wfdel]');if(d){if(!confirm('Diesen Wurf löschen?'))return;const id=d.dataset.wfdel;wfEdit(W=>{W.wuerfe=W.wuerfe.filter(x=>x.id!==id);});toast('Wurf gelöscht');return;}
+  if(e.target.id==='wf-delbad'){if(!confirm('Alle Würfe über '+WF_MAX+' km/h löschen?'))return;wfEdit(W=>{W.wuerfe=W.wuerfe.filter(x=>x.v*3.6<=WF_MAX);});toast('Fehlmessungen gelöscht');}
+});
 document.addEventListener('click',e=>{
   const a=e.target.closest('[data-wfa]');if(a){wfArt=a.dataset.wfa;renderWurf();return;}
   const p=e.target.closest('[data-wfp]');if(p){wfSel.has(p.dataset.wfp)?wfSel.delete(p.dataset.wfp):wfSel.add(p.dataset.wfp);renderWurf();}
