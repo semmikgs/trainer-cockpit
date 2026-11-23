@@ -144,6 +144,7 @@ tr[data-gsel]{cursor:pointer}
     <button class="btn" data-tab="plan">Wechselplan</button>
     <button class="btn" data-tab="bew">Bewertung</button>
     <button class="btn" data-tab="spiele">Spiele</button>
+    <button class="btn" data-tab="wurf">Würfe</button>
     <button class="btn" data-tab="saved">Gespeichert</button>
   </nav>
   <span id="sync" title="Speicherstatus"></span>
@@ -288,6 +289,17 @@ tr[data-gsel]{cursor:pointer}
 </section>
 
 <!-- GESPEICHERT -->
+<section id="t-wurf">
+  <div class="card">
+    <h2>Wurfgeschwindigkeit · Vergleich</h2>
+    <div class="seg wrap" id="wf-art"></div>
+    <div style="margin-top:10px" id="wf-pl"></div>
+    <label style="display:inline-flex;gap:8px;align-items:center;margin-top:4px"><input type="checkbox" id="wf-avg" checked> Mannschaftsschnitt des Tages einblenden</label>
+    <div id="wf-chart" style="margin-top:10px"></div>
+    <div id="wf-tab"></div>
+  </div>
+</section>
+
 <section id="t-saved">
   <div class="card">
     <div class="row">
@@ -392,7 +404,49 @@ function setTab(t){
   render();
 }
 document.querySelectorAll('nav .btn').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));
-function render(){({kader:renderKader,auf:renderAuf,plan:renderPlan,bew:renderBew,spiele:renderSpiele,saved:renderSaved})[tab]();}
+function render(){({kader:renderKader,auf:renderAuf,plan:renderPlan,bew:renderBew,spiele:renderSpiele,wurf:renderWurf,saved:renderSaved})[tab]();}
+
+/* ---------- Würfe: Verlauf mehrerer Spieler + Mannschaftsschnitt ---------- */
+const WF_PAL=['#ff8a00','#3ec1ff','#5dd39e','#ffd166','#c77dff','#ff5d8f','#4dd4c6','#f4a261','#90be6d','#a0c4ff','#e76f51','#b5e48c','#ffadad','#9bf6ff'];
+const WF_ART=[['alle','Alle Würfe'],['stand','Standwurf'],['sprung','Sprungwurf'],['schlag','Schlagwurf'],['pass','Pass']];
+let wfArt='alle',wfSel=null;
+function renderWurf(){
+  const pl=byNr(),col=id=>WF_PAL[Math.max(0,pl.findIndex(p=>p.id===id))%WF_PAL.length];
+  const ws=(WURF&&Array.isArray(WURF.wuerfe)?WURF.wuerfe:[]).filter(w=>w.pid&&(wfArt==='alle'?w.art!=='pass':w.art===wfArt));
+  $('#wf-art').innerHTML=WF_ART.map(a=>`<button class="btn${a[0]===wfArt?' on':''}" data-wfa="${a[0]}">${a[1]}</button>`).join('');
+  const best={},day=w=>w.ts.slice(0,10);
+  for(const w of ws){const d=day(w),b=(best[w.pid]=best[w.pid]||{});b[d]=Math.max(b[d]||0,w.v*3.6);}
+  const withData=pl.filter(p=>best[p.id]);
+  if(wfSel===null)wfSel=new Set(withData.slice(0,3).map(p=>p.id));
+  $('#wf-pl').innerHTML=withData.length?withData.map(p=>`<span class="tag" data-wfp="${p.id}" style="cursor:pointer;padding:6px 10px;margin:0 6px 6px 0;display:inline-flex;gap:6px;align-items:center;${wfSel.has(p.id)?`background:${col(p.id)};color:#0d0e11;font-weight:700`:'opacity:.75'}"><i style="width:10px;height:10px;border-radius:50%;background:${wfSel.has(p.id)?'#0d0e11':col(p.id)}"></i>${esc(lbl(p))}</span>`).join('')
+    :'<div class="muted">Noch keine Würfe in dieser Wurfart. Gemessen wird mit der Wurfmessung im Cockpit.</div>';
+  const days=[...new Set(ws.map(day))].sort();
+  const avgDay=d=>{const a=Object.values(best).map(b=>b[d]).filter(v=>v);return a.length?a.reduce((x,y)=>x+y,0)/a.length:null;};
+  const showAvg=$('#wf-avg').checked;
+  const lines=[...wfSel].filter(id=>best[id]).map(id=>({c:col(id),pts:days.map((d,i)=>best[id][d]?[i,best[id][d]]:null).filter(Boolean)}));
+  if(showAvg)lines.push({c:'#ffffff',dash:true,pts:days.map((d,i)=>{const v=avgDay(d);return v?[i,v]:null;}).filter(Boolean)});
+  const vals=lines.flatMap(l=>l.pts.map(q=>q[1]));
+  if(!days.length||!vals.length){$('#wf-chart').innerHTML='';$('#wf-tab').innerHTML='';return;}
+  const lo=Math.max(0,Math.floor(Math.min(...vals)/10)*10-10),hi=Math.ceil(Math.max(...vals)/10)*10+5;
+  const Wd=900,Hd=360,L=46,R=16,T=18,B=40,X=i=>days.length<2?L+(Wd-L-R)/2:L+i*(Wd-L-R)/(days.length-1),Y=v=>T+(hi-v)*(Hd-T-B)/(hi-lo||1);
+  let g=`<text x="${L}" y="12" fill="#8b919b" font-size="12">km/h · Bestwert pro Tag</text>`;
+  for(let v=lo;v<=hi;v+=10)g+=`<line x1="${L}" x2="${Wd-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="#2b2f37"/><text x="${L-6}" y="${Y(v)+4}" fill="#8b919b" font-size="12" text-anchor="end">${v}</text>`;
+  const step=Math.max(1,Math.ceil(days.length/10));
+  days.forEach((d,i)=>{if(i%step===0||i===days.length-1)g+=`<text x="${X(i)}" y="${Hd-14}" fill="#8b919b" font-size="12" text-anchor="middle">${d.slice(8,10)}.${d.slice(5,7)}.</text>`;});
+  for(const l of lines){if(!l.pts.length)continue;
+    g+=`<polyline points="${l.pts.map(q=>X(q[0])+','+Y(q[1])).join(' ')}" fill="none" stroke="${l.c}" stroke-width="${l.dash?2.5:3}"${l.dash?' stroke-dasharray="8 6"':''}/>`+
+      (l.dash?'':l.pts.map(q=>`<circle cx="${X(q[0])}" cy="${Y(q[1])}" r="4.5" fill="${l.c}"/>`).join(''));}
+  $('#wf-chart').innerHTML=`<svg viewBox="0 0 ${Wd} ${Hd}" style="width:100%;height:auto">${g}</svg>`+(showAvg?'<div class="muted" style="margin-top:-4px">Gestrichelt: Mannschaftsschnitt = Durchschnitt der Tagesbestwerte aller Spieler, die an dem Tag geworfen haben.</div>':'');
+  const k1=v=>v.toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1});
+  $('#wf-tab').innerHTML=`<table style="width:100%;border-collapse:collapse;margin-top:12px;font-size:15px"><tr style="color:var(--muted);font-size:12px"><th style="text-align:left">Spieler</th><th style="text-align:right">Bestwert</th><th style="text-align:right">letzter Tag</th><th style="text-align:right">Würfe</th></tr>`+
+    withData.map(p=>{const b=best[p.id],ds=Object.keys(b).sort(),n=ws.filter(w=>w.pid===p.id).length;
+      return `<tr style="border-top:1px solid var(--line)"><td style="padding:6px 0"><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${col(p.id)};margin-right:6px"></i>${esc(lbl(p))}</td><td style="text-align:right">${k1(Math.max(...Object.values(b)))}</td><td style="text-align:right">${k1(b[ds[ds.length-1]])}</td><td style="text-align:right">${n}</td></tr>`;}).join('')+'</table>';
+}
+document.addEventListener('click',e=>{
+  const a=e.target.closest('[data-wfa]');if(a){wfArt=a.dataset.wfa;renderWurf();return;}
+  const p=e.target.closest('[data-wfp]');if(p){wfSel.has(p.dataset.wfp)?wfSel.delete(p.dataset.wfp):wfSel.add(p.dataset.wfp);renderWurf();}
+});
+$('#wf-avg').addEventListener('change',renderWurf);
 
 /* ---------- Kader ---------- */
 let kEdit=null,kPos=[],kFav=null,kDpos=[],kDfav=null;

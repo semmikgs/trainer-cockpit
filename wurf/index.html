@@ -85,6 +85,15 @@ input{-webkit-user-select:text;user-select:text}
 #pop .pr>span{min-width:110px;opacity:.8}
 #pop .chip{font-size:16px;padding:7px 12px}
 #pop .hint{font-size:13px;opacity:.6;margin-top:6px;max-width:420px;line-height:1.4}
+#rlBox{position:fixed;left:50%;transform:translateX(-50%);top:calc(max(10px,env(safe-area-inset-top)) + 56px);z-index:3;background:#000d;border:2px solid var(--gold);border-radius:18px;padding:8px 22px 10px;text-align:center;display:none;min-width:320px}
+#rlBox .h{font-size:14px;opacity:.7}
+#rlBox .lb{font-size:14px;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+#rlBox .nm{font-size:44px;font-weight:800;line-height:1.1;display:flex;gap:12px;align-items:center;justify-content:center}
+#rlBox .nm .nr{background:var(--red);border-radius:10px;padding:0 10px;font-size:32px}
+#rlBox .nx{font-size:17px;opacity:.75}
+#rlBox .bt{display:flex;gap:8px;justify-content:center;margin-top:6px}#rlBox .bt .btn{font-size:15px;padding:6px 12px}
+#rlBox.flash{animation:fl .6s}@keyframes fl{0%{background:#ffd16655}100%{background:#000d}}
+.rtab{width:100%;border-collapse:collapse;font-size:17px;margin-top:6px}.rtab td,.rtab th{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left}.rtab th{color:var(--muted);font-size:13px;font-weight:600}.rtab td.n{text-align:right;font-variant-numeric:tabular-nums}
 #chPanel{position:fixed;left:12px;top:calc(max(10px,env(safe-area-inset-top)) + 58px);width:270px;z-index:2;background:#000c;border:1px solid #fff3;border-left:4px solid var(--gold);border-radius:12px;padding:10px 12px;display:none;font-size:16px}
 #chPanel h5{margin:0 0 6px;font-size:15px;color:var(--gold)}
 #chPanel .cr{display:flex;justify-content:space-between;gap:8px;padding:3px 0}
@@ -167,6 +176,16 @@ input{-webkit-user-select:text;user-select:text}
   </div>
 </div>
 
+<div id="rlBox"></div>
+<div class="sheet" id="rlSheet"><div class="sheetIn">
+  <h3>🔁 Werferstaffel</h3>
+  <div class="sub">Werfer – antippen zum Ab-/Auswählen</div><div id="rlPl" class="chips"></div>
+  <div class="sub">Reihenfolge</div><div class="chips" id="rlOrd"><button class="chip" data-ro="nr">nach Rückennummer</button><button class="chip" data-ro="zufall">Zufall</button></div>
+  <div class="sub">Wurfart</div><div class="chips" id="rlArt"></div>
+  <div class="sub">Runden</div><div class="chips" id="rlRnd"></div>
+  <div class="srow"><span class="sp"></span><button class="btn" id="rlCancel">Abbrechen</button><button class="btn pri" id="rlGo">Staffel starten</button></div>
+</div></div>
+<div class="sheet" id="rlSum"><div class="sheetIn" id="rlSumIn"></div></div>
 <div class="sheet" id="chSheet"><div class="sheetIn cs">
   <h3>🎯 Challenge</h3>
   <div class="chips" id="chType">
@@ -276,7 +295,7 @@ const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const vid=$('vid'), ov=$('ov'), octx=ov.getContext('2d');
 
 /* ---------- Geräte-Einstellungen (lokal) ---------- */
-const DEF={S:5,D:6,fov:60,hold:5,thr:25,unit:'kmh',L:null,R:null,bt:0.25,bb:0.70,ball:17,diag:false,nRecent:5,nTop:5,fWho:false,fRecent:false,fHS:false,fArt:false,fSlow:false,fSlowAuto:false,fVoice:false,fCh:false,fMove:false,hsHold:6,scope:'heute'};
+const DEF={S:5,D:6,fov:60,hold:5,thr:25,unit:'kmh',L:null,R:null,bt:0.25,bb:0.70,ball:17,diag:false,nRecent:5,nTop:5,fWho:false,fRecent:false,fHS:false,fArt:false,fSlow:false,fSlowAuto:false,fVoice:false,fCh:false,fMove:false,fRelay:false,hsHold:6,scope:'heute'};
 let cfg=Object.assign({},DEF);
 try{Object.assign(cfg,JSON.parse(localStorage.getItem('mtv_wurf_cfg')||'{}'))}catch(e){}
 function saveCfg(){try{localStorage.setItem('mtv_wurf_cfg',JSON.stringify(cfg))}catch(e){}}
@@ -297,7 +316,7 @@ async function loadData(){
   K=(kd&&Array.isArray(kd.kader))?kd.kader.slice().sort((a,b)=>((a.nr===''||a.nr==null)?999:+a.nr)-((b.nr===''||b.nr==null)?999:+b.nr)||String(a.name).localeCompare(b.name)):[];
   W=normW(await Cloud.load('wurf',null))||W;
   try{const c=JSON.parse(localStorage.getItem('mtv_wurf_cur'));if(c)curP=c;}catch(e){}
-  renderWho();renderRecent();renderCH();
+  renderWho();renderRecent();renderCH();rlApply();renderRL();
 }
 const nameOf=w=>{if(w.pid){const p=K.find(x=>x.id===w.pid);if(p)return p.name;}return w.name||'';};
 const keyOf=w=>w.pid?'p:'+w.pid:(w.name?'g:'+w.name.trim().toLowerCase():null);
@@ -308,7 +327,7 @@ try{const a=JSON.parse(localStorage.getItem('mtv_wurf_art'));if(a){curArt=a.art|
 function saveArt(){try{localStorage.setItem('mtv_wurf_art',JSON.stringify({art:curArt,hand:curHand}))}catch(e){}}
 /* Kategorie-Filter: 'alle' = alle Würfe ohne Pässe, sonst genau diese Wurfart */
 const inCat=(w,cat)=>!cat||cat==='alle'?w.art!=='pass':w.art===cat;
-const catOfNew=()=>cfg.fArt?curArt:'alle';
+const catOfNew=()=>rlActive()?RL.art:cfg.fArt?curArt:'alle';
 function renderArt(){
   $('artBtn').textContent='🤾 '+artName(curArt);$('handBtn').textContent=curHand==='L'?'✋ Links':'✋ Rechts';saveArt();
 }
@@ -493,9 +512,10 @@ function evaluate(){
 }
 let last=null;
 function showResult(v,dt,n){
-  const cp=cfg.fWho?curP:null;
+  const cp=rlActive()||cfg.fWho?curP:null;
   const w={id:uid(),pid:cp?cp.pid:null,name:cp?cp.name:'',v:Math.round(v*1000)/1000,dt:Math.round(dt*10000)/10000,n,ts:new Date().toISOString()};
-  if(cfg.fArt){w.art=curArt;w.hand=curHand;}
+  if(cfg.fArt||rlActive()){w.art=rlActive()?RL.art:curArt;w.hand=curHand;}
+  const rlTxt=rlActive()?rlAfterThrow(w):'';
   if(cfg.fCh&&CH){w.ch=CH.id;if(CH.type==='team')w.team=CH.cur;}
   // Platz / Bestleistung vor dem Speichern bestimmen (innerhalb der Wurfart)
   const k=keyOf(w),cat=catOfNew();let placeTxt='',placeSay='';pendingHS=null;
@@ -512,7 +532,7 @@ function showResult(v,dt,n){
   const chTxt=cfg.fCh&&CH?challengeResult(w):'';
   if(cfg.fCh&&CH&&CH.type==='team'&&CH.alt){CH.cur=CH.cur==='A'?'B':'A';saveCH();}
   saveW();renderRecent();renderCH();
-  say([cfg.fWho&&nameOf(w)?nameOf(w):'',sayVal(w.v),placeSay,chTxt.replace(/[^\wäöüÄÖÜß ,.]/g,'')].filter(Boolean).join('. '));
+  say([(cfg.fWho||rlTxt)&&nameOf(w)?nameOf(w):'',sayVal(w.v),placeSay,chTxt.replace(/[^\wäöüÄÖÜß ,.]/g,''),rlTxt].filter(Boolean).join('. '));
   $('chRes').textContent=chTxt;
   clipFor=w.id;postN=cfg.fSlow?Math.max(6,Math.round((fpsAvg||30)*0.4)):0;
   $('slowBtn').style.display='none';
@@ -601,6 +621,86 @@ $('rpClose').addEventListener('click',closeReplay);
 $('rpPlay').addEventListener('click',()=>{rp.play=!rp.play;$('rpPlay').textContent=rp.play?'⏸':'▶';rp.head=clip.frames[rp.i].t;});
 $('rpPos').addEventListener('input',()=>{rp.play=false;$('rpPlay').textContent='▶';rp.i=+$('rpPos').value;rp.head=clip.frames[rp.i].t;});
 document.querySelectorAll('#replay [data-rs]').forEach(b=>b.addEventListener('click',()=>{rp.speed=+b.dataset.rs;markSpeed();}));
+
+/* ---------- Werferstaffel ---------- */
+let RL=null;   // {id,order:[pid],rounds,art,ord,pos,done}
+try{RL=JSON.parse(localStorage.getItem('mtv_wurf_relay'));}catch(e){}
+function saveRL(){try{localStorage.setItem('mtv_wurf_relay',JSON.stringify(RL))}catch(e){}}
+const rlTotal=()=>RL.order.length*RL.rounds;
+const rlActive=()=>!!(cfg.fRelay&&RL&&!RL.done&&RL.pos<rlTotal());
+const rlPid=i=>RL.order[i%RL.order.length];
+const pOf=pid=>K.find(x=>x.id===pid)||{name:'?',nr:''};
+const nrSort=(a,b)=>((a.nr===''||a.nr==null)?999:+a.nr)-((b.nr===''||b.nr==null)?999:+b.nr)||String(a.name).localeCompare(b.name);
+function rlApply(){
+  if(!rlActive())return;const p=pOf(rlPid(RL.pos));
+  curP={pid:p.id||rlPid(RL.pos),name:p.name};renderWho();curHand=p.lh?'L':'R';curArt=RL.art;renderArt();
+}
+function renderRL(){
+  const on=rlActive();$('rlBox').style.display=on?'block':'none';if(!on)return;
+  const n=RL.order.length,r=Math.floor(RL.pos/n)+1,p=pOf(rlPid(RL.pos)),nx=RL.pos+1<rlTotal()?pOf(rlPid(RL.pos+1)):null;
+  $('rlBox').innerHTML=`<div class="h">🔁 ${artName(RL.art)} · Runde ${r}/${RL.rounds} · Wurf ${RL.pos+1}/${rlTotal()}</div>
+    <div class="lb">Jetzt wirft</div><div class="nm">${p.nr!==''&&p.nr!=null?`<span class="nr">${esc(p.nr)}</span>`:''}${esc(p.name)}</div>
+    <div class="nx">${nx?'danach: '+esc(nx.name):'letzter Wurf der Staffel'}</div>
+    <div class="bt"><button class="btn" data-rl="back">◀ Zurück</button><button class="btn" data-rl="skip">Überspringen ▶</button><button class="btn danger" data-rl="end">⏹ Beenden</button></div>`;
+}
+function rlAfterThrow(w){
+  w.relay=RL.id;RL.pos++;
+  if(RL.pos>=rlTotal()){RL.done=true;saveRL();renderRL();setTimeout(rlSummary,cfg.hold*1000);return 'Staffel beendet';}
+  saveRL();rlApply();renderRL();$('rlBox').classList.remove('flash');void $('rlBox').offsetWidth;$('rlBox').classList.add('flash');
+  return 'Als Nächstes '+pOf(rlPid(RL.pos)).name;
+}
+$('rlBox').addEventListener('click',e=>{const b=e.target.closest('[data-rl]');if(!b||!RL)return;const a=b.dataset.rl;
+  if(a==='back'&&RL.pos>0)RL.pos--;
+  if(a==='skip'){RL.pos++;if(RL.pos>=rlTotal()){RL.done=true;saveRL();renderRL();rlSummary();return;}}
+  if(a==='end'){if(!confirm('Staffel beenden?'))return;RL.done=true;saveRL();renderRL();rlSummary();return;}
+  saveRL();rlApply();renderRL();});
+let rlSel=null,rlOrd='nr',rlArtSel='stand',rlRounds=1;
+function openRL(){
+  const pl=K.slice().sort(nrSort);
+  if(!rlSel||!rlSel.size)rlSel=new Set(pl.map(p=>p.id));
+  if(RL){rlOrd=RL.ord||'nr';rlArtSel=RL.art;rlRounds=RL.rounds;}
+  $('rlPl').innerHTML=pl.length?pl.map(p=>`<button class="chip${rlSel.has(p.id)?' on':''}" data-rp="${p.id}"><span class="nr">${esc(p.nr)}</span>${esc(p.name)}</button>`).join('')
+    :'<span style="opacity:.6">Kein Kader gefunden – bitte anmelden bzw. Spieler im Kadertool anlegen.</span>';
+  $('rlArt').innerHTML=ARTEN.map(a=>`<button class="chip${a[0]===rlArtSel?' on':''}" data-ra="${a[0]}">${a[1]}</button>`).join('');
+  $('rlRnd').innerHTML=[1,2,3,5].map(n=>`<button class="chip${n===rlRounds?' on':''}" data-rr="${n}">${n}</button>`).join('');
+  document.querySelectorAll('#rlOrd [data-ro]').forEach(b=>b.classList.toggle('on',b.dataset.ro===rlOrd));
+  $('rlSheet').classList.add('open');
+}
+$('rlSheet').addEventListener('click',e=>{
+  const p=e.target.closest('[data-rp]'),o=e.target.closest('[data-ro]'),a=e.target.closest('[data-ra]'),r=e.target.closest('[data-rr]');
+  if(p){rlSel.has(p.dataset.rp)?rlSel.delete(p.dataset.rp):rlSel.add(p.dataset.rp);}
+  else if(o)rlOrd=o.dataset.ro;else if(a)rlArtSel=a.dataset.ra;else if(r)rlRounds=+r.dataset.rr;
+  else if(e.target===$('rlSheet')){$('rlSheet').classList.remove('open');return;}else return;
+  openRL();
+});
+function rlOrder(){
+  const o=K.filter(p=>rlSel.has(p.id)).sort(nrSort).map(p=>p.id);
+  if(rlOrd==='zufall')for(let i=o.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[o[i],o[j]]=[o[j],o[i]];}
+  return o;
+}
+function startRL(){
+  const order=rlOrder();if(!order.length){alert('Bitte mindestens einen Werfer auswählen.');return false;}
+  RL={id:uid(),order,rounds:rlRounds,art:rlArtSel,ord:rlOrd,pos:0,done:false};saveRL();
+  if(!cfg.fRelay){cfg.fRelay=true;saveCfg();renderBar();}
+  rlApply();renderRL();return true;
+}
+$('rlGo').addEventListener('click',()=>{if(startRL())$('rlSheet').classList.remove('open');});
+$('rlCancel').addEventListener('click',()=>{$('rlSheet').classList.remove('open');if(!RL){cfg.fRelay=false;saveCfg();renderBar();}});
+function rlSummary(){
+  if(!RL)return;const ws=W.wuerfe.filter(w=>w.relay===RL.id),u=cfg.unit==='kmh'?'km/h':'m/s';
+  const ids=[...new Set(RL.order)].map(pOf).sort(nrSort);
+  const rows=ids.map(p=>{const a=ws.filter(w=>w.pid===p.id).map(w=>w.v);
+    return `<tr><td>${esc(p.nr)}</td><td>${esc(p.name)}</td><td class="n">${a.length}</td><td class="n">${a.length?spd(Math.max(...a)):'–'}</td><td class="n">${a.length?spd(avg(a)):'–'}</td></tr>`;}).join('');
+  const all=ws.map(w=>w.v);
+  $('rlSumIn').innerHTML=`<h3>🔁 Staffel fertig · ${artName(RL.art)}</h3>
+    <table class="rtab"><tr><th>Nr.</th><th>Name</th><th style="text-align:right">Würfe</th><th style="text-align:right">Bestwert</th><th style="text-align:right">Ø</th></tr>${rows}
+    <tr><td></td><td><b>Mannschaft</b></td><td class="n"><b>${all.length}</b></td><td class="n"><b>${all.length?spd(Math.max(...all)):'–'}</b></td><td class="n"><b>${all.length?spd(avg(all)):'–'}</b></td></tr></table>
+    <div class="hint" style="opacity:.6;margin-top:8px">Werte in ${u}. Alle Würfe sind gespeichert und im Kadertool unter „Würfe“ als Verlauf zu sehen.</div>
+    <div class="srow"><span class="sp"></span><button class="btn" id="rlClose">Schließen</button><button class="btn pri" id="rlAgain">Nochmal</button></div>`;
+  $('rlSum').classList.add('open');
+  $('rlClose').onclick=()=>{$('rlSum').classList.remove('open');RL=null;saveRL();cfg.fRelay=false;saveCfg();renderBar();renderRL();};
+  $('rlAgain').onclick=()=>{$('rlSum').classList.remove('open');rlSel=new Set(RL.order);rlOrd=RL.ord;rlArtSel=RL.art;rlRounds=RL.rounds;startRL();};
+}
 
 /* ---------- Challenge ---------- */
 let CH=null;   // {id,type:'ziel'|'team'|'serie',target(km/h),t:[name1,name2],cur:'A'|'B',alt}
@@ -733,7 +833,7 @@ const sels={iU:'unit'};
 const FEATS=[
   {k:'fWho',l:'👤 Namen'},{k:'fRecent',l:'📋 Letzte',o:'recent'},{k:'fHS',l:'🏆 Bestenliste',o:'hs'},
   {k:'fArt',l:'🤾 Wurfart'},{k:'fSlow',l:'▶ Zeitlupe',o:'slow'},{k:'fMove',l:'🎥 Wurfbewegung',o:'slow'},
-  {k:'fVoice',l:'🔊 Ansage'},{k:'fCh',l:'🎯 Challenge',o:'ch'}];
+  {k:'fVoice',l:'🔊 Ansage'},{k:'fCh',l:'🎯 Challenge',o:'ch'},{k:'fRelay',l:'🔁 Staffel',o:'relay'}];
 function renderBar(){
   $('fbar').innerHTML=FEATS.map(f=>`<div class="fb${cfg[f.k]?' on':''}"><button data-f="${f.k}">${f.l}</button>${f.o?`<button class="o" data-o="${f.o}">▾</button>`:''}</div>`).join('');
 }
@@ -746,12 +846,14 @@ $('fbar').addEventListener('click',e=>{
   if(k==='fVoice'&&cfg.fVoice){unlockVoice();say('Ansage ist an');}
   saveCfg();closePop();renderBar();applyFeatures();
   if(k==='fCh'&&cfg.fCh&&!CH)openCH();
+  if(k==='fRelay'){if(cfg.fRelay){if(!RL)openRL();}else{RL=null;saveRL();renderRL();}}
   if(k==='fMove'&&cfg.fMove)toast('Werfer seitlich ins Kamerabild stellen – mind. 1 m links neben der linken Stange');
 });
 function chipRow(label,key,opts,fmtL){return `<div class="pr"><span>${label}</span>${opts.map(v=>`<button class="chip${String(cfg[key])===String(v)?' on':''}" data-pk="${key}" data-pv="${v}">${fmtL?fmtL(v):v}</button>`).join('')}</div>`;}
 let popKind=null;
 function openPop(kind){
   if(kind==='ch'){closePop();openCH();return;}
+  if(kind==='relay'){closePop();openRL();return;}
   if(popKind===kind){closePop();return;}
   popKind=kind;let h='';
   if(kind==='recent')h='<h4>📋 Letzte Würfe</h4>'+chipRow('Anzahl','nRecent',[3,5,10]);
@@ -777,7 +879,8 @@ function applyFeatures(){
   if(!cfg.fSlow){$('slowBtn').style.display='none';}
   renderArt();renderCH();
   if(!cfg.fHS)hideHS();renderRecent();
-  if((cfg.fWho||cfg.fHS)&&!Cloud.user())Cloud.requireLogin(()=>loadData(),{title:'Wurfmessung',back:'../',logo:'../logo_mtv_schwarmstedt.jpg'});
+  renderRL();
+  if((cfg.fWho||cfg.fHS||cfg.fRelay)&&!Cloud.user())Cloud.requireLogin(()=>loadData(),{title:'Wurfmessung',back:'../',logo:'../logo_mtv_schwarmstedt.jpg'});
 }
 function fillPanel(){$('iDg').checked=!!cfg.diag;for(const id in fields)$(id).value=cfg[fields[id]];for(const id in sels)$(id).value=String(cfg[sels[id]]);dminHint();}
 function dminHint(){const dmin=(cfg.S/2)*1.15/Math.tan(cfg.fov*Math.PI/360);
