@@ -365,6 +365,11 @@ const wOf=pid=>WURF&&Array.isArray(WURF.wuerfe)?WURF.wuerfe.filter(w=>w.pid===pi
 const top3=pid=>WURF&&Array.isArray(WURF.wuerfe)?WURF.wuerfe.filter(w=>w.pid===pid&&w.art!=='pass').sort((a,b)=>b.v-a.v).slice(0,3):[];
 const kmh=v=>(v*3.6).toLocaleString('de-DE',{minimumFractionDigits:1,maximumFractionDigits:1});
 async function loadWurf(){try{WURF=await Cloud.load('wurf',null);}catch(e){WURF=null;}}
+/* Wurftechnik (Cloud-Dokument "technik", nur lesen): letzter Technik-Score je Wurfart, in Klammern die Entwicklung seit der ersten Analyse */
+let TECH=null;async function loadTech(){try{TECH=await Cloud.load('technik',null);}catch(e){TECH=null;}}
+const TECH_ART={sprung:'Sprungwurf'};
+const techTag=pid=>{if(!TECH||!TECH.daten)return '';const t=[];for(const k in TECH.daten){const a=(TECH.daten[k]||[]).filter(j=>j.sid===pid&&j.score!=null).sort((x,y)=>x.ts-y.ts);if(a.length){const d=a.length>1?a[a.length-1].score-a[0].score:0;t.push(`${TECH_ART[k]||k} ${a[a.length-1].score} %${d?` (${d>0?'+':''}${d})`:''}`);}}
+  return t.length?`<a class="tag" href="../technik/" title="Wurftechnik öffnen" style="text-decoration:none;cursor:pointer">🎯 ${t.join(' · ')} ›</a>`:'';};
 /* Wurf-Verlauf: Bestwert pro Tag und Wurfart */
 const W_ART=[['stand','Standwurf','#ff8a00'],['sprung','Sprungwurf','#3ec1ff'],['schlag','Schlagwurf','#5dd39e'],['pass','Pass','#ffd166'],['','ohne Wurfart','#c9ced6']];
 function wurfChart(pid){
@@ -523,7 +528,7 @@ $('#k-save').addEventListener('click',()=>{
 function renderKader(){
   const list=byNr();
   $('#k-count').textContent='('+list.length+')';
-  $('#k-list').innerHTML=list.length?list.map(p=>`<div class="item"><div class="nrb">${esc(p.nr)}</div><div class="grow"><b>${esc(p.name)}</b>${(p.pos||[]).map(k=>favOf(p.pos,p.fav)===k&&p.pos.length>1?`<span class="tag fav">${k}★</span>`:`<span class="tag">${k}</span>`).join('')||'<span class="muted">keine Position</span>'}${S.cfg.defPos&&(p.dpos||[]).length?' <span class="muted" style="font-size:11px">Abw.</span>'+p.dpos.map(k=>favOf(p.dpos,p.dfav)===k&&p.dpos.length>1?`<span class="tag fav">${k}★</span>`:`<span class="tag">${k}</span>`).join(''):''}${p.lh?'<span class="tag" style="background:var(--silver);color:#0d0e11">Linkshänder</span>':''}${(t=>t.length?`<span class="tag" data-wv="${p.id}" title="Verlauf anzeigen" style="cursor:pointer">🤾 ${t.map(w=>kmh(w.v)).join(' · ')} km/h ›</span>`:'')(top3(p.id))}</div><button class="btn sm" data-edit="${p.id}">Bearbeiten</button><button class="btn sm del" data-del="${p.id}">✕</button></div>`).join(''):'<div class="muted">Noch keine Spieler angelegt.</div>';
+  $('#k-list').innerHTML=list.length?list.map(p=>`<div class="item"><div class="nrb">${esc(p.nr)}</div><div class="grow"><b>${esc(p.name)}</b>${(p.pos||[]).map(k=>favOf(p.pos,p.fav)===k&&p.pos.length>1?`<span class="tag fav">${k}★</span>`:`<span class="tag">${k}</span>`).join('')||'<span class="muted">keine Position</span>'}${S.cfg.defPos&&(p.dpos||[]).length?' <span class="muted" style="font-size:11px">Abw.</span>'+p.dpos.map(k=>favOf(p.dpos,p.dfav)===k&&p.dpos.length>1?`<span class="tag fav">${k}★</span>`:`<span class="tag">${k}</span>`).join(''):''}${p.lh?'<span class="tag" style="background:var(--silver);color:#0d0e11">Linkshänder</span>':''}${(t=>t.length?`<span class="tag" data-wv="${p.id}" title="Verlauf anzeigen" style="cursor:pointer">🤾 ${t.map(w=>kmh(w.v)).join(' · ')} km/h ›</span>`:'')(top3(p.id))}${techTag(p.id)}</div><button class="btn sm" data-edit="${p.id}">Bearbeiten</button><button class="btn sm del" data-del="${p.id}">✕</button></div>`).join(''):'<div class="muted">Noch keine Spieler angelegt.</div>';
 }
 $('#k-list').addEventListener('click',e=>{
   const ed=e.target.closest('[data-edit]'),dl=e.target.closest('[data-del]');
@@ -1163,7 +1168,7 @@ async function boot(){
   let d=normalize(await Cloud.load('kader',null));
   if(!d){const old=normalize(legacy());if(old){d=old;S=d;save();toast('Lokale Daten in die Cloud übernommen');}}
   if(d)S=d;
-  await loadWurf();
+  await loadWurf();await loadTech();
   renderKPos();
   setTab(S.kader.length?(tab||'auf'):'kader');
 }
@@ -1172,7 +1177,7 @@ Cloud.requireLogin(async()=>{await boot();booted=true;},{title:'Kadertool',back:
 document.addEventListener('visibilitychange',async()=>{
   if(document.visibilityState!=='visible'||!booted||!Cloud.user())return;
   const ae=document.activeElement;if(ae&&/INPUT|TEXTAREA|SELECT/.test(ae.tagName))return;
-  const d=normalize(await Cloud.load('kader',null));await loadWurf();if(d){S=d;render();}
+  const d=normalize(await Cloud.load('kader',null));await loadWurf();await loadTech();if(d){S=d;render();}
 });
 })();
 </script>
